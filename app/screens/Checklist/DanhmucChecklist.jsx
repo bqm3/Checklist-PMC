@@ -759,30 +759,6 @@ const DanhmucChecklist = ({ navigation }) => {
               {item?.ent_hangmuc?.ent_khuvuc?.ent_khoicv?.KhoiCV}
             </Text>
           </DataTable.Cell>
-          {/* <DataTable.Cell style={{ width: 150 }}>
-            <Text allowFontScaling={false} 
-              style={{ color: isExistIndex ? "white" : "black" }}
-              numberOfLines={2}
-            >
-              {item?.Giatridinhdanh}
-            </Text>
-          </DataTable.Cell>
-          <DataTable.Cell style={{ width: 100, justifyContent: "center" }}>
-            <Text allowFontScaling={false} 
-              style={{ color: isExistIndex ? "white" : "black" }}
-              numberOfLines={2}
-            >
-              {item?.Maso}
-            </Text>
-          </DataTable.Cell>
-          <DataTable.Cell style={{ width: 100, justifyContent: "center" }}>
-            <Text allowFontScaling={false} 
-              style={{ color: isExistIndex ? "white" : "black" }}
-              numberOfLines={2}
-            >
-              {item?.Sothutu}
-            </Text>
-          </DataTable.Cell> */}
         </DataTable.Row>
       </TouchableHighlight>
     );
@@ -853,7 +829,6 @@ const DanhmucChecklist = ({ navigation }) => {
                         alignContent: "center",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        // flex: 1, backgroundColor: 'red'
                       }}
                     >
                       <TouchableOpacity
@@ -877,14 +852,13 @@ const DanhmucChecklist = ({ navigation }) => {
                         text={"Thêm mới"}
                         width={"auto"}
                         color={COLORS.bg_button}
-                        // icon={<Ionicons name="add" size={20} color="white" />}
                         onPress={handlePresentModalPress}
                       />
                     </View>
 
                     {listChecklist?.data && listChecklist?.data?.length > 0 ? (
                       <ScrollView
-                        style={{ flex: 1, marginBottom: 20, marginTop: 20 }}
+                        style={{ flex: 1, marginBottom: 20, marginTop: 20, backgroundColor: 'red' }}
                       >
                         <DataTable
                           style={{
@@ -937,7 +911,7 @@ const DanhmucChecklist = ({ navigation }) => {
                                         allowFontScaling={false}
                                         style={[
                                           styles.text,
-                                          { color: "black" },
+                                          { color: "black", textAlign: 'center' },
                                         ]}
                                       >
                                         {item?.til}
@@ -953,13 +927,14 @@ const DanhmucChecklist = ({ navigation }) => {
                                   keyExtractor={(item, index) =>
                                     `${item?.ID_Khuvuc}_${index}`
                                   }
-                                  scrollEnabled={true}
+                                  style={{paddingBottom: 50}}
+                                  scrollEnabled={false}
                                   data={listChecklist?.data}
                                   renderItem={_renderItem}
                                 />
                               )}
                             <DataTable.Pagination
-                              style={{ justifyContent: "flex-start" }}
+                              style={{ justifyContent: "flex-start", backgroundColor: 'gray' }}
                               page={page}
                               numberOfPages={Math.ceil(
                                 ent_checklist?.totalPages
@@ -1003,12 +978,7 @@ const DanhmucChecklist = ({ navigation }) => {
                           >
                             Bạn chưa thêm dữ liệu nào
                           </Text>
-                          {/* <ButtonChecklist
-                            text={"Thêm mới"}
-                            width={"auto"}
-                            color={COLORS.bg_button}
-                            onPress={handlePresentModalPress}
-                          /> */}
+                          
                         </View>
                       </>
                     )}

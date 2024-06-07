@@ -858,13 +858,13 @@ const ThucHienChecklist = ({ navigation }) => {
                                   keyExtractor={(item, index) =>
                                     `${item?.ID_ChecklistC}_${index}`
                                   }
-                                  scrollEnabled={true}
+                                  scrollEnabled={false}
                                   data={data}
                                   renderItem={_renderItem}
                                 />
                               )}
                               <DataTable.Pagination
-                                style={{ justifyContent: "flex-start" }}
+                                style={{ justifyContent: "flex-start", backgroundColor: 'grey' }}
                                 page={page}
                                 numberOfPages={Math.ceil(
                                   tb_checklistc?.totalPages
