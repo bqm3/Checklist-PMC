@@ -435,6 +435,8 @@ const ThucHienChecklist = ({ navigation }) => {
               response.data.data.ID_ChecklistC,
               response.data.data.ID_KhoiCV,
               response.data.data.ID_Calv,
+              response.data.data.ID_Toanha,
+              response.data.data.ID_Khuvucs,
               null
             );
           });
@@ -528,12 +530,13 @@ const ThucHienChecklist = ({ navigation }) => {
     });
   };
 
-  const handleChecklistDetail = (id1, id2, id3, id4) => {
+  const handleChecklistDetail = (id1, id2, id3, id4, id5) => {
     navigation.navigate("Thực hiện khu vực", {
       ID_ChecklistC: id1,
       ID_KhoiCV: id2,
       ID_Calv: id3,
       ID_Toanha: id4,
+      ID_Khuvucs: id5
     });
 
     setNewActionCheckList([]);
@@ -858,13 +861,13 @@ const ThucHienChecklist = ({ navigation }) => {
                                   keyExtractor={(item, index) =>
                                     `${item?.ID_ChecklistC}_${index}`
                                   }
-                                  scrollEnabled={false}
+                                  scrollEnabled={true}
                                   data={data}
                                   renderItem={_renderItem}
                                 />
                               )}
                               <DataTable.Pagination
-                                style={{ justifyContent: "flex-start", backgroundColor: 'grey' }}
+                                style={{ justifyContent: "flex-start" }}
                                 page={page}
                                 numberOfPages={Math.ceil(
                                   tb_checklistc?.totalPages
@@ -1006,7 +1009,8 @@ const ThucHienChecklist = ({ navigation }) => {
                             newActionCheckList[0]?.ID_ChecklistC,
                             newActionCheckList[0]?.ID_KhoiCV,
                             newActionCheckList[0]?.ID_Calv,
-                            newActionCheckList[0]?.ID_Toanha
+                            newActionCheckList[0]?.ID_Toanha,
+                            newActionCheckList[0]?.ID_Khuvucs
                           )
                         }
                       >

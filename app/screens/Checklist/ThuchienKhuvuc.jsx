@@ -34,8 +34,10 @@ import ChecklistContext from "../../context/ChecklistContext";
 import adjust from "../../adjust";
 
 const ThucHienKhuvuc = ({ route, navigation }) => {
-  const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Toanha } = route.params;
-  const { setDataChecklists, dataHangmuc,setStepKhuvuc, stepKhuvuc } = useContext(DataContext);
+  const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Toanha, ID_Khuvucs } = route.params;
+
+  const { setDataChecklists, dataHangmuc, setStepKhuvuc, stepKhuvuc } =
+    useContext(DataContext);
   const { setDataChecklistFilterContext } = useContext(ChecklistContext);
 
   const dispath = useDispatch();
@@ -54,43 +56,26 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const [data, setData] = useState([]);
 
   const [checkKhuvuc, setCheckKhuvuc] = useState([]);
-  const toanhaIds = checkKhuvuc.map((item) => item.ID_Toanha);
+  // const toanhaIds = checkKhuvuc.map((item) => item.ID_Toanha);
 
   const init_checklist = async () => {
     await dispath(ent_checklist_mul_hm(dataHangmuc, ID_Calv, ID_ChecklistC));
   };
 
-  const init_toanha = async () => {
-    await dispath(ent_toanha_get());
-  };
-
   useEffect(() => {
-    if (ID_Toanha !== undefined && ID_Toanha !== null) {
-      setStepKhuvuc(1);
-      const toanhaIdsArray = ID_Toanha.split(", ").map((id) =>
-        parseInt(id, 10)
-      );
-
-      const matchingEntKhuvuc = ent_khuvuc.filter((item) =>
-        toanhaIdsArray.includes(item.ID_Toanha)
-      );
-      setData(matchingEntKhuvuc);
+    const ID_KhuvucsArray = Array.isArray(ID_Khuvucs) ? ID_Khuvucs : ID_Khuvucs.split(",").map(Number);
+    setStepKhuvuc(1);
+    // Kiểm tra xem mảng ent_khuvuc có dữ liệu không
+    if (ent_khuvuc && ent_khuvuc.length > 0) {
+        const matchingEntKhuvuc = ent_khuvuc.filter((item) =>
+            // Kiểm tra xem ID_Khuvuc có nằm trong mảng ID_KhuvucsArray không
+            ID_KhuvucsArray.includes(item.ID_Khuvuc)
+        );
+        setData(matchingEntKhuvuc);
     } else {
-      setStepKhuvuc(0);
-      init_toanha();
     }
-  }, [ID_Toanha]);
+}, [ ID_Khuvucs, ent_khuvuc]);
 
-  useEffect(() => {
-    if (stepKhuvuc === 1 && toanhaIds.length > 0) {
-      const toanhaIdsArray = toanhaIds?.map((id) => parseInt(id, 10));
-
-      const matchingEntKhuvuc = ent_khuvuc.filter((item) =>
-        toanhaIdsArray.includes(item.ID_Toanha)
-      );
-      setData(matchingEntKhuvuc);
-    }
-  }, [stepKhuvuc]);
 
   useEffect(() => {
     init_checklist();
@@ -211,7 +196,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       ID_Calv: ID_Calv,
       ID_Khuvuc: dataSelect[0].ID_Khuvuc,
     });
-    setDataSelect([])
+    setDataSelect([]);
   };
 
   const handleSubmitKhuvuc = async () => {
@@ -301,7 +286,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     return (
       <TouchableOpacity
         onPress={() => toggleSelectToanha(item)}
-        onLongPress={()=> handleSubmit()}
+        onLongPress={() => handleSubmit()}
         style={[
           styles.content,
           {
