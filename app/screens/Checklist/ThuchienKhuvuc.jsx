@@ -121,10 +121,12 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
         if (network === null) {
           console.log("Network status not found in storage.");
+          setSubmit(false);
         }
       } catch (error) {
         // Handle any errors that occur
         console.log("Error fetching network status:", error);
+        setSubmit(false);
       }
     };
 

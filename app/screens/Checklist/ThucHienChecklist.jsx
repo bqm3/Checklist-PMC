@@ -14,6 +14,7 @@ import {
   Modal,
   TouchableHighlight,
   TouchableWithoutFeedback,
+  TouchableNativeFeedback
 } from "react-native";
 import React, {
   useRef,
@@ -500,14 +501,18 @@ const ThucHienChecklist = ({ navigation }) => {
 
   const handleCloseSheetImage = useCallback(() => {
     bottomSheetModalRef?.current?.close();
+    bottomSheetModalRef2?.current?.close();
+    setOpacity(1);
   }, []);
 
   const handleToggleModal = () => {
     bottomSheetModalRef2?.current?.present();
+    setOpacity(0.2);
   };
 
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef?.current?.present();
+    setOpacity(0.2);
   }, []);
 
   const handleAdd = () => {
@@ -907,16 +912,9 @@ const ThucHienChecklist = ({ navigation }) => {
                             allowFontScaling={false}
                             style={[styles.danhmuc, { paddingVertical: 10 }]}
                           >
-                            Bạn chưa thêm dữ liệu nào
+                            Bạn chưa có dữ liệu nào
                           </Text>
-                          {user?.Permission !== 1 && (
-                            <ButtonChecklist
-                              text={"Thêm mới"}
-                              width={"auto"}
-                              color={COLORS.bg_button}
-                              onPress={handlePresentModalPress}
-                            />
-                          )}
+                          
                         </View>
                       )}
                     </>
@@ -930,7 +928,7 @@ const ThucHienChecklist = ({ navigation }) => {
                 snapPoints={snapPoints}
                 onChange={handleSheetChanges}
               >
-                <BottomSheetScrollView style={styles.contentContainer}>
+                <View style={styles.contentContainer}>
                   <Text
                     allowFontScaling={false}
                     style={{
@@ -951,7 +949,7 @@ const ThucHienChecklist = ({ navigation }) => {
                     handlePushDataSave={handlePushDataSave}
                     isLoading={loadingSubmit}
                   />
-                </BottomSheetScrollView>
+                </View>
               </BottomSheetModal>
 
               <BottomSheetModal
@@ -960,7 +958,7 @@ const ThucHienChecklist = ({ navigation }) => {
                 snapPoints={snapPoints2}
                 onChange={handleSheetChanges2}
               >
-                <BottomSheetScrollView style={styles.contentContainer}>
+                <View style={styles.contentContainer}>
                   <ModalChecklistCImage
                     dataImages={dataImages}
                     handleChangeImages={handleChangeImages}
@@ -973,7 +971,7 @@ const ThucHienChecklist = ({ navigation }) => {
                     handlePushDataImagesSave={handlePushDataImagesSave}
                     newActionCheckList={newActionCheckList}
                   />
-                </BottomSheetScrollView>
+                </View>
               </BottomSheetModal>
 
               {newActionCheckList?.length > 0 && user?.Permission !== 1 && (
@@ -1093,6 +1091,10 @@ const styles = StyleSheet.create({
     fontSize: adjust(20),
     fontWeight: "600",
     paddingVertical: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    alignItems: "center",
   },
 });
 
