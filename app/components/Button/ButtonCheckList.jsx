@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  TouchableNativeFeedback
 } from "react-native";
 import React from "react";
 import { COLORS } from "../../constants/theme";
@@ -53,7 +54,7 @@ const ButtonChecklist = ({ text, onPress, color, marginLeft, icon }) => {
         </TouchableOpacity>
       ) : (
         <>
-          <TouchableNativeFeedback
+          <TouchableOpacity
             style={{
               width: "auto",
               backgroundColor: color ? color : COLORS.bg_main,
@@ -89,7 +90,7 @@ const ButtonChecklist = ({ text, onPress, color, marginLeft, icon }) => {
                 {text ? text : ""}
               </Text>
             </View>
-          </TouchableNativeFeedback>
+          </TouchableOpacity>
         </>
       )}
     </>

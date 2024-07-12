@@ -44,7 +44,6 @@ const LoginScreen = ({ navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const dispatch = useDispatch();
 
-  const { step, saveStep } = useContext(LoginContext);
   const { error, user, message, isLoading } = useSelector(
     (state) => state.authReducer
   );
@@ -175,12 +174,7 @@ const LoginScreen = ({ navigation }) => {
     })();
   }, []);
 
-  let text = "Waiting..";
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = JSON.stringify(location);
-  }
+  
 
   return (
     <>
