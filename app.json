@@ -42,7 +42,7 @@
         "backgroundColor": "#ffffff"
       },
       "buildNumber": "1",
-      "bundleIdentifier": "com.pmc.PMCCHECKLIST",
+      "bundleIdentifier": "com.pmc.PMCCHECKLIST", 
       "runtimeVersion": {
         "policy": "sdkVersion"
       },
