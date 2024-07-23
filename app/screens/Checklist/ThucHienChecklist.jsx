@@ -14,7 +14,7 @@ import {
   Modal,
   TouchableHighlight,
   TouchableWithoutFeedback,
-  TouchableNativeFeedback
+  TouchableNativeFeedback,
 } from "react-native";
 import React, {
   useRef,
@@ -51,6 +51,7 @@ import ModalChecklistCImage from "../../components/Modal/ModalChecklistCImage";
 import DataContext from "../../context/DataContext";
 import adjust from "../../adjust";
 import { useFocusEffect } from "@react-navigation/native";
+import ButtonSubmit from "../../components/Button/ButtonSubmit";
 // import mime from "mime";
 
 const numberOfItemsPerPageList = [20, 30, 50];
@@ -111,6 +112,8 @@ const ThucHienChecklist = ({ navigation }) => {
   const [opacity, setOpacity] = useState(1);
   const [page, setPage] = React.useState(0);
 
+  const [modalVisible, setModalVisible] = useState(false);
+
   const [numberOfItemsPerPage, onItemsPerPageChange] = React.useState(
     numberOfItemsPerPageList[0]
   );
@@ -163,7 +166,6 @@ const ThucHienChecklist = ({ navigation }) => {
     return () => clearTimeout(timeoutId);
   }, []); //
 
-
   useEffect(() => {
     const interval = setInterval(() => {
       setDataInput((prevData) => ({
@@ -174,7 +176,6 @@ const ThucHienChecklist = ({ navigation }) => {
 
     return () => clearInterval(interval); // Clear interval on component unmount
   }, []);
-
 
   useEffect(() => {
     setData(tb_checklistc?.data);
@@ -400,14 +401,18 @@ const ThucHienChecklist = ({ navigation }) => {
 
   const handlePushDataSave = async () => {
     if (dataInput.ID_Calv === null || dataInput.ID_Giamsat === null) {
-      Alert.alert("PMC Thông báo", "Chưa chọn ca làm việc hoặc người giám sát", [
-        {
-          text: "Hủy",
-          onPress: () => console.log("Cancel Pressed"),
-          style: "cancel",
-        },
-        { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-      ]);
+      Alert.alert(
+        "PMC Thông báo",
+        "Chưa chọn ca làm việc hoặc người giám sát",
+        [
+          {
+            text: "Hủy",
+            onPress: () => console.log("Cancel Pressed"),
+            style: "cancel",
+          },
+          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+        ]
+      );
     } else {
       let data = {
         ID_Calv: dataInput.Calv.ID_Calv,
@@ -490,6 +495,16 @@ const ThucHienChecklist = ({ navigation }) => {
     }
   }, []);
 
+  const handleClosePopUp = () => {
+    setOpacity(1);
+    setModalVisible(false);
+  };
+
+  const handleOpenPopUp = () => {
+    setOpacity(0.2);
+    setModalVisible(true);
+  };
+
   const handleSheetChanges2 = useCallback((index) => {
     if (index === -1) {
       setOpacity(1);
@@ -500,7 +515,6 @@ const ThucHienChecklist = ({ navigation }) => {
   }, []);
 
   const handleCloseSheetImage = useCallback(() => {
-    bottomSheetModalRef?.current?.close();
     bottomSheetModalRef2?.current?.close();
     setOpacity(1);
   }, []);
@@ -509,11 +523,6 @@ const ThucHienChecklist = ({ navigation }) => {
     bottomSheetModalRef2?.current?.present();
     setOpacity(0.2);
   };
-
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef?.current?.present();
-    setOpacity(0.2);
-  }, []);
 
   const handleAdd = () => {
     setDataInput({
@@ -541,7 +550,7 @@ const ThucHienChecklist = ({ navigation }) => {
       ID_KhoiCV: id2,
       ID_Calv: id3,
       ID_Toanha: id4,
-      ID_Khuvucs: id5
+      ID_Khuvucs: id5,
     });
 
     setNewActionCheckList([]);
@@ -773,27 +782,27 @@ const ThucHienChecklist = ({ navigation }) => {
                 }}
               >
                 <View style={styles.container}>
-                <TouchableWithoutFeedback onPress={() => handleCloseSheetImage()}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignContent: "center",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                    }}
+                  <TouchableWithoutFeedback
+                    onPress={() => handleCloseSheetImage()}
                   >
-                   
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignContent: "center",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       {user?.Permission !== 1 && (
                         <ButtonChecklist
                           text={"Thêm mới"}
                           width={"auto"}
                           color={COLORS.bg_button}
                           // icon={<Ionicons name="add" size={20} color="white" />}
-                          onPress={handlePresentModalPress}
+                          onPress={() => handleOpenPopUp()}
                         />
                       )}
-                   
-                  </View>
+                    </View>
                   </TouchableWithoutFeedback>
                   {isLoading ? (
                     <View
@@ -872,7 +881,10 @@ const ThucHienChecklist = ({ navigation }) => {
                                 />
                               )}
                               <DataTable.Pagination
-                                style={{ justifyContent: "flex-start", backgroundColor: '#eeeeee' }}
+                                style={{
+                                  justifyContent: "flex-start",
+                                  backgroundColor: "#eeeeee",
+                                }}
                                 page={page}
                                 numberOfPages={Math.ceil(
                                   tb_checklistc?.totalPages
@@ -914,7 +926,6 @@ const ThucHienChecklist = ({ navigation }) => {
                           >
                             Bạn chưa có dữ liệu nào
                           </Text>
-                          
                         </View>
                       )}
                     </>
@@ -922,7 +933,7 @@ const ThucHienChecklist = ({ navigation }) => {
                 </View>
               </ScrollView>
 
-              <BottomSheetModal
+              {/* <BottomSheetModal
                 ref={bottomSheetModalRef}
                 index={0}
                 snapPoints={snapPoints}
@@ -951,7 +962,51 @@ const ThucHienChecklist = ({ navigation }) => {
                     isLoading={loadingSubmit}
                   />
                 </View>
-              </BottomSheetModal>
+              </BottomSheetModal> */}
+
+              <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                  Alert.alert("Modal has been closed.");
+                  setModalVisible(!modalVisible);
+                }}
+              >
+                <View style={styles.centeredView}>
+                  <View
+                    style={[
+                      styles.modalView,
+                      { width: "80%", height: "auto", minHeight: 450 },
+                    ]}
+                  >
+                    <View style={styles.contentContainer}>
+                      <Text
+                        allowFontScaling={false}
+                        style={{
+                          color: "black",
+                          fontWeight: "600",
+                          fontSize: 20,
+                          textAlign: "center",
+                          paddingTop: 10,
+                        }}
+                      >
+                        {user?.ent_khoicv?.KhoiCV}
+                      </Text>
+                      <ModalChecklistC
+                        ent_giamsat={ent_giamsat}
+                        ent_calv={ent_calv}
+                        dataInput={dataInput}
+                        handleChangeText={handleChangeText}
+                        handlePushDataSave={handlePushDataSave}
+                        isLoading={loadingSubmit}
+                        handleClosePopUp={handleClosePopUp}
+                      />
+                     
+                    </View>
+                  </View>
+                </View>
+              </Modal>
 
               <BottomSheetModal
                 ref={bottomSheetModalRef2}
@@ -1074,10 +1129,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   modalView: {
-    // margin: 20,
     backgroundColor: "white",
     borderRadius: 16,
-    padding: 10,
+    padding: 4,
     // alignItems: "center",
     shadowColor: "#000",
     shadowOffset: {

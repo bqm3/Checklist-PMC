@@ -26,6 +26,7 @@ const ModalChecklistC = ({
   handleChangeText,
   handlePushDataSave,
   isLoading,
+  handleClosePopUp,
 }) => {
   const ref = useRef(null);
   const defaultCalv = ent_calv?.find(
@@ -225,6 +226,16 @@ const ModalChecklistC = ({
                 onPress={handlePushDataSave}
               />
             </View>
+            <View style={{ marginTop: 20 }}>
+              <ButtonSubmit
+                text={"Đóng"}
+                width={"100%"}
+                backgroundColor={"grey"}
+                color={"white"}
+                isLoading={isLoading}
+                onPress={handleClosePopUp}
+              />
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -241,6 +252,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     paddingHorizontal: 8,
     paddingVertical: 8,
+    paddingTop: 12,
   },
   textInput: {
     color: "#05375a",
