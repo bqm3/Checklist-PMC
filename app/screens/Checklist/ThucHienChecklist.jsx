@@ -434,6 +434,7 @@ const ThucHienChecklist = ({ navigation }) => {
           })
           .then((response) => {
             handleAdd();
+            handleClosePopUp()
             int_checklistc();
             handleCloseSheetImage();
             setLoadingSubmit(false);
@@ -484,16 +485,6 @@ const ThucHienChecklist = ({ navigation }) => {
       }
     }
   };
-
-  const handleSheetChanges = useCallback((index) => {
-    if (index === -1) {
-      // bottomSheetModalRef?.current?.close();
-      setOpacity(1);
-      handleAdd();
-    } else {
-      setOpacity(0.2);
-    }
-  }, []);
 
   const handleClosePopUp = () => {
     setOpacity(1);
