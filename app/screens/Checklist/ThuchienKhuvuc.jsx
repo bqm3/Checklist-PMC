@@ -39,8 +39,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Toanha, ID_Khuvucs } =
     route.params;
 
-  const { setDataChecklists, dataHangmuc, setStepKhuvuc, stepKhuvuc } =
-    useContext(DataContext);
+  const {
+    setDataChecklists,
+    dataHangmuc,
+    hangMuc,
+    setStepKhuvuc,
+    stepKhuvuc,
+    HangMucDefault,
+    dataChecklists,
+  } = useContext(DataContext);
   const { setDataChecklistFilterContext, dataChecklistFilterContext } =
     useContext(ChecklistContext);
 
@@ -152,23 +159,34 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       .toLowerCase();
 
     try {
-      const resData = ent_khuvuc.filter(
+      const resDataKhuvuc = ent_khuvuc.filter(
         (item) => item.MaQrCode.trim().toLowerCase() === cleanedValue
       );
-      if (resData.length >= 1) {
+
+      const resDataHangmuc = hangMuc.filter(
+        (item) => item.MaQrCode.trim().toLowerCase() === cleanedValue
+      );
+
+      if (resDataHangmuc.length >= 1) {
+        navigation.navigate("Chi tiết Checklist", {
+          ID_ChecklistC: ID_ChecklistC,
+          ID_KhoiCV: ID_KhoiCV,
+          ID_Calv: ID_Calv,
+          hangMuc: hangMuc,
+          Hangmuc: resDataHangmuc[0].Hangmuc,
+          ID_Hangmuc: resDataHangmuc[0].ID_Hangmuc,
+        });
+      } else if (resDataKhuvuc.length >= 1) {
         navigation.navigate("Thực hiện hạng mục", {
           ID_ChecklistC: ID_ChecklistC,
           ID_KhoiCV: ID_KhoiCV,
           ID_Calv: ID_Calv,
-          ID_Khuvuc: resData[0].ID_Khuvuc,
+          ID_Khuvuc: resDataKhuvuc[0].ID_Khuvuc,
         });
-        setIsScan(false);
-        setModalVisibleQr(false);
-        setOpacity(1);
-      } else if (resData.length === 0) {
+      } else if (resDataKhuvuc.length === 0 && resDataHangmuc.length === 0) {
         Alert.alert(
           "PMC Thông báo",
-          "Không tìm thấy khu vực có mã Qr phù hợp",
+          "Không tìm thấy khu vực, hạng mục có mã Qr phù hợp",
           [
             {
               text: "Hủy",
@@ -178,11 +196,11 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
           ]
         );
-        setIsScan(false);
-        setModalVisibleQr(false);
-        setOpacity(1);
       }
-    } catch (error) {
+      setIsScan(false);
+      setModalVisibleQr(false);
+      setOpacity(1);
+    } catch (error) { 
       if (error.response) {
         // Lỗi từ phía server (có response từ server)
         Alert.alert("PMC Thông báo", error.response.data.message, [

@@ -872,7 +872,7 @@ const ThucHienChecklist = ({ navigation }) => {
                                 />
                               )}
                               <DataTable.Pagination
-                                style={{ justifyContent: "flex-start" }}
+                                style={{ justifyContent: "flex-start", backgroundColor: '#eeeeee' }}
                                 page={page}
                                 numberOfPages={Math.ceil(
                                   tb_checklistc?.totalPages
@@ -926,6 +926,7 @@ const ThucHienChecklist = ({ navigation }) => {
                 ref={bottomSheetModalRef}
                 index={0}
                 snapPoints={snapPoints}
+                shouldMeasureContentHeight={true}
                 onChange={handleSheetChanges}
               >
                 <View style={styles.contentContainer}>

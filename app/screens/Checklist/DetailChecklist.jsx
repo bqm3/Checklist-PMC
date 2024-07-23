@@ -118,7 +118,7 @@ const DetailChecklist = ({ route, navigation }) => {
       return item;
     });
 
-      handleSetData(key, updatedDataChecklist, it);
+    handleSetData(key, updatedDataChecklist, it);
     // }
   };
 
@@ -184,8 +184,6 @@ const DetailChecklist = ({ route, navigation }) => {
       setNewActionDataChecklist([]);
       setDefaultActionDataChecklist([]);
       setDataChecklistFaild([]);
-
-     
     }
   };
 
@@ -252,8 +250,46 @@ const DetailChecklist = ({ route, navigation }) => {
           mergedArrCheck.splice(indexDefault, 1);
         }
       }
+      else if(key === "isCheck"){
+        const indexFaild = newDataChecklist.findIndex((item) => {
+          return (
+            item.ID_Checklist === it.ID_Checklist &&
+            it.Anh === null &&
+            it.GhichuChitiet === ""
+          );
+        });
+        if (indexFaild === -1) {
+          if (
+            !mergedArrImage.some(
+              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
+            )
+          ) {
+            mergedArrImage.push(it);
+          }
+          const indexDefault = mergedArrCheck.findIndex(
+            (item) => item.ID_Checklist === it.ID_Checklist
+          );
+          if (indexDefault !== -1) {
+            mergedArrCheck.splice(indexDefault, 1);
+          }
+        } else {
+          if (
+            !mergedArrCheck.some(
+              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
+            )
+          ) {
+            mergedArrCheck.push(it);
+          }
+          const indexDefault = mergedArrImage.findIndex(
+            (item) => item.ID_Checklist === it.ID_Checklist
+          );
+          if (indexDefault !== -1) {
+            mergedArrImage.splice(indexDefault, 1);
+          }
+        }
+      }
     } else {
-      if (key === "option" || key === "active") {
+      if (key === "option" || key === "active" ) {
         const indexFaild = newDataChecklist.find(
           (item) =>
             item.ID_Checklist === it.ID_Checklist &&
@@ -311,13 +347,7 @@ const DetailChecklist = ({ route, navigation }) => {
   // click item checklist
   const handleItemClick = (value, it, key) => {
     const updatedDataChecklist = dataChecklistFilter?.map((item, i) => {
-      if (item.ID_Checklist === it.ID_Checklist && key === "option") {
-        return {
-          ...item,
-          valueCheck: value ? value : null,
-          gioht: moment().format("LTS"),
-        };
-      } else if (item.ID_Checklist === it.ID_Checklist && key === "active") {
+      if (item.ID_Checklist === it.ID_Checklist) {
         return {
           ...item,
           valueCheck: value ? value : null,
@@ -427,7 +457,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
       if (networkState.isConnected) {
         setLoadingSubmit(true);
-        setActiveAll(false)
+        setActiveAll(false);
         if (
           defaultActionDataChecklist.length === 0 &&
           dataChecklistFaild.length === 0
@@ -460,7 +490,6 @@ const DetailChecklist = ({ route, navigation }) => {
           dataChecklistFaild.length > 0
         ) {
           await hadlChecklistAll();
-          setLoadingSubmit(false);
         }
       } else {
         Alert.alert(
@@ -620,9 +649,10 @@ const DetailChecklist = ({ route, navigation }) => {
   // api all
   const hadlChecklistAll = async () => {
     try {
+      setLoadingSubmit(true);
       // Tạo một đối tượng FormData để chứa dữ liệu của dataChecklistFaild
       const formData = new FormData();
-  
+
       // Lặp qua từng phần tử trong dataChecklistFaild để thêm vào FormData
       dataChecklistFaild.forEach((item, index) => {
         formData.append("ID_ChecklistC", ID_ChecklistC);
@@ -630,12 +660,17 @@ const DetailChecklist = ({ route, navigation }) => {
         formData.append("Ketqua", item.valueCheck || "");
         formData.append("Gioht", item.gioht);
         formData.append("Ghichu", item.GhichuChitiet || "");
-  
+
         // Nếu có hình ảnh, thêm vào FormData
         if (item.Anh) {
           const file = {
-            uri: Platform.OS === "android" ? item.Anh.uri : item.Anh.uri.replace("file://", ""),
-            name: item.Anh.fileName || `${Math.floor(Math.random() * 999999999)}.jpg`,
+            uri:
+              Platform.OS === "android"
+                ? item.Anh.uri
+                : item.Anh.uri.replace("file://", ""),
+            name:
+              item.Anh.fileName ||
+              `${Math.floor(Math.random() * 999999999)}.jpg`,
             type: "image/jpeg",
           };
           formData.append(`Images_${index}`, file);
@@ -645,24 +680,33 @@ const DetailChecklist = ({ route, navigation }) => {
           formData.append(`Images_${index}`, {});
         }
       });
-  
+
       // Chuẩn bị dữ liệu cho yêu cầu thứ hai
       const descriptions = [
         defaultActionDataChecklist
-          .map((item) => `${item.ID_Checklist}/${item.Giatridinhdanh}/${item.gioht}`)
+          .map(
+            (item) =>
+              `${item.ID_Checklist}/${item.Giatridinhdanh}/${item.gioht}`
+          )
           .join(","),
       ];
       const descriptionsJSON = JSON.stringify(descriptions);
-      const ID_Checklists = defaultActionDataChecklist.map((item) => item.ID_Checklist);
-  
+      const ID_Checklists = defaultActionDataChecklist.map(
+        (item) => item.ID_Checklist
+      );
+
       // Tạo các yêu cầu API
-      const requestFaild = axios.post(`${BASE_URL}/tb_checklistchitiet/create`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-  
+      const requestFaild = axios.post(
+        `${BASE_URL}/tb_checklistchitiet/create`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
       const requestDone = axios.post(
         `${BASE_URL}/tb_checklistchitietdone/create`,
         {
@@ -678,28 +722,28 @@ const DetailChecklist = ({ route, navigation }) => {
           },
         }
       );
-  
       // Gọi cả hai API cùng lúc
-      axios.all([requestFaild, requestDone])
-        .then(axios.spread((faildResponse, doneResponse) => {
-          console.log(faildResponse.data, doneResponse.data);
-  
-          postHandleSubmit();
+      axios
+        .all([requestFaild, requestDone])
+        .then(
+          axios.spread((faildResponse, doneResponse) => {
+            postHandleSubmit();
+            setLoadingSubmit(false);
+
+            // Hiển thị thông báo thành công
+            Alert.alert("PMC Thông báo", "Checklist thành công", [
+              {
+                text: "Hủy",
+                onPress: () => console.log("Cancel Pressed"),
+                style: "cancel",
+              },
+              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+            ]);
+          })
+        )
+        .catch((error) => {
           setLoadingSubmit(false);
-          
-          // Hiển thị thông báo thành công
-          Alert.alert("PMC Thông báo", "Checklist thành công", [
-            {
-              text: "Hủy",
-              onPress: () => console.log("Cancel Pressed"),
-              style: "cancel",
-            },
-            { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-          ]);
-        }))
-        .catch(error => {
-          setLoadingSubmit(false);
-          
+
           if (error.response) {
             // Xử lý lỗi từ server
             Alert.alert("PMC Thông báo", error.response.data.message, [
@@ -712,123 +756,48 @@ const DetailChecklist = ({ route, navigation }) => {
             ]);
           } else if (error.request) {
             // Xử lý lỗi yêu cầu (không nhận được phản hồi từ server)
-            console.error('Request error:', error.request);
-            Alert.alert("PMC Thông báo", "Network error. Please try again later.", [
-              {
-                text: "Hủy",
-                onPress: () => console.log("Cancel Pressed"),
-                style: "cancel",
-              },
-              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-            ]);
+            Alert.alert(
+              "PMC Thông báo",
+              "Network error. Please try again later.",
+              [
+                {
+                  text: "Hủy",
+                  onPress: () => console.log("Cancel Pressed"),
+                  style: "cancel",
+                },
+                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+              ]
+            );
           } else {
-            // Xử lý các lỗi khác
-            console.error('Error:', error.message);
-            Alert.alert("PMC Thông báo", "An error occurred. Please try again later.", [
-              {
-                text: "Hủy",
-                onPress: () => console.log("Cancel Pressed"),
-                style: "cancel",
-              },
-              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-            ]);
+            Alert.alert(
+              "PMC Thông báo",
+              "An error occurred. Please try again later.",
+              [
+                {
+                  text: "Hủy",
+                  onPress: () => console.log("Cancel Pressed"),
+                  style: "cancel",
+                },
+                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+              ]
+            );
           }
         });
-  
     } catch (error) {
       setLoadingSubmit(false);
-      console.error('Error:', error.message);
-      Alert.alert("PMC Thông báo", "An error occurred. Please try again later.", [
-        {
-          text: "Hủy",
-          onPress: () => console.log("Cancel Pressed"),
-          style: "cancel",
-        },
-        { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-      ]);
-    }
-  };
-  
-  
-
-  // view item flatlist
-  const renderItem = (item, index) => {
-    return (
-      <View
-        style={[
-          styles.content,
+      Alert.alert(
+        "PMC Thông báo",
+        "An error occurred. Please try again later.",
+        [
           {
-            backgroundColor: `${item?.Tinhtrang}` === "1" ? "#ea9999" : "white",
+            text: "Hủy",
+            onPress: () => console.log("Cancel Pressed"),
+            style: "cancel",
           },
-        ]}
-        key={item?.ID_Checklist}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-            width: "100%",
-            justifyContent: "space-between",
-          }}
-        >
-          <View
-            style={{
-              width: "80%",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <ActiveChecklist
-              item={item}
-              index={index}
-              size={adjust(30)}
-              handleToggle={() =>
-                handleItemClick(item?.Giatridinhdanh, item, "active")
-              }
-              // active={}
-            />
-            <View style={{ width: "90%" }}>
-              <Text
-                allowFontScaling={false}
-                style={{
-                  fontSize: adjust(16),
-                  color: "black",
-                  fontWeight: "600",
-                }}
-                numberOfLines={5}
-              >
-                {item?.Sothutu}. {item?.Checklist}
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={{
-              // width: "25%",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => handlePopupActiveTieuChuan(item, index)}
-            >
-              <MaterialIcons name="read-more" size={adjust(30)} color="black" />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => handlePopupActive(item, index)}>
-              <Entypo
-                name="dots-three-vertical"
-                size={adjust(30)}
-                color="black"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
+          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+        ]
+      );
+    }
   };
 
   // Thiết lập lại dữ liệu sau khi hoàn thành xử lý API
@@ -893,6 +862,88 @@ const DetailChecklist = ({ route, navigation }) => {
     setModalVisible(false);
     setIndex(null);
   }, []);
+
+  // view item flatlist
+  const renderItem = (item, index) => {
+    return (
+      <View
+        style={[
+          styles.content,
+          {
+            backgroundColor: `${item?.Tinhtrang}` === "1" ? "#ea9999" : "white",
+          },
+        ]}
+        key={item?.ID_Checklist}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            width: "100%",
+            justifyContent: "space-between",
+          }}
+        >
+          <View
+            style={{
+              width: "80%",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            {item?.isCheck == 0 && (
+              <ActiveChecklist
+                item={item}
+                index={index}
+                size={adjust(30)}
+                handleToggle={() =>
+                  handleItemClick(item?.Giatridinhdanh, item, "active")
+                }
+                // active={}
+              />
+            )}
+            <View style={{ width: "90%" }}>
+              <Text
+                allowFontScaling={false}
+                style={{
+                  fontSize: adjust(16),
+                  color: "black",
+                  fontWeight: "600",
+                }}
+                numberOfLines={5}
+              >
+                {item?.Sothutu}. {item?.Checklist}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              // width: "25%",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => handlePopupActiveTieuChuan(item, index)}
+            >
+              <MaterialIcons name="read-more" size={adjust(30)} color="black" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => handlePopupActive(item, index)}>
+              <Entypo
+                name="dots-three-vertical"
+                size={adjust(30)}
+                color="black"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   // format number
   const decimalNumber = (number) => {
