@@ -260,7 +260,7 @@ const ThucHienChecklist = ({ navigation }) => {
                       >
                         <MaterialIcons
                           name="navigate-next"
-                          size={adjust(24)}
+                          size={adjust(40)}
                           color="white"
                         />
                       </TouchableOpacity>
@@ -302,8 +302,8 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: COLORS.color_bg,
-    width: 65,
-    height: 65,
+    width: 60,
+    height: 60,
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",

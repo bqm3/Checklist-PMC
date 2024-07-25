@@ -34,6 +34,7 @@ import ChecklistContext from "../../context/ChecklistContext";
 import adjust from "../../adjust";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Network from "expo-network";
+import ConnectContext from "../../context/ConnectContext";
 
 const ThucHienKhuvuc = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Toanha, ID_Khuvucs } =
@@ -55,6 +56,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const { ent_khuvuc, ent_checklist_detail, ent_toanha } = useSelector(
     (state) => state.entReducer
   );
+
+  const { isConnect, saveConnect } = useContext(ConnectContext);
 
   const { user, authToken } = useSelector((state) => state.authReducer);
 
@@ -122,7 +125,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       try {
         // Retrieve the item from AsyncStorage
         const network = await AsyncStorage.getItem("checkNetwork");
-        if (network === "1") {
+        if (network === "1" && isConnect) {
           setSubmit(true);
         }
 
@@ -139,7 +142,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
     // Call the async function
     fetchNetworkStatus();
-  }, [dataChecklistFilterContext]);
+  }, [dataChecklistFilterContext, isConnect]);
+
 
   useEffect(() => {
     init_checklist();
@@ -283,12 +287,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           defaultActionDataChecklist.length === 0 &&
           dataChecklistFaild.length === 0
         ) {
+          await AsyncStorage.removeItem("checkNetwork");
           // Hiển thị thông báo cho người dùng
           Alert.alert("PMC Thông báo", "Không có checklist để kiểm tra!", [
             { text: "OK", onPress: () => console.log("OK Pressed") },
           ]);
           setLoadingSubmit(false);
-          await AsyncStorage.removeItem("checkNetwork");
+          setSubmit(false)
+          saveConnect(false)
+         
         }
         // Kiểm tra dữ liệu và xử lý tùy thuộc vào trạng thái của `defaultActionDataChecklist` và `dataChecklistFaild`
         if (
@@ -404,9 +411,9 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         ]);
       }
     }
+  
   };
-
-  // api faild tb_checklistchitietdone
+ 
   const handleDefaultActionDataChecklist = async () => {
     // Xử lý API cho defaultActionDataChecklist
     const descriptions = [
@@ -443,6 +450,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       setLoadingSubmit(false);
       await AsyncStorage.removeItem("checkNetwork");
       setSubmit(false);
+      saveConnect(false)
       // Hiển thị cảnh báo sau khi tất cả các yêu cầu hoàn thành
       Alert.alert("PMC Thông báo", "Checklist thành công", [
         {
@@ -549,6 +557,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       await Promise.all([requestFaild, requestDone]);
       await AsyncStorage.removeItem("checkNetwork");
       setSubmit(false);
+      saveConnect(false)
       postHandleSubmit();
       setLoadingSubmit(false);
       // Hiển thị thông báo thành công
@@ -577,50 +586,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         ]);
       }
     }
-  };
-
-  const handleSubmitKhuvuc = async () => {
-    const data = {
-      ID_ChecklistC: ID_ChecklistC,
-      toanhaIds: toanhaIds.join(", "),
-      ID_Calv: ID_Calv,
-      ID_User: user.ID_User,
-    };
-
-    await axios
-      .post(BASE_URL + "/tb_checklistc/toanha", data, {
-        headers: {
-          Accept: "application/json",
-          Authorization: "Bearer " + authToken,
-        },
-      })
-      .then((res) => {
-        setLoadingSubmit(false);
-        setStepKhuvuc(1);
-        // Hiển thị cảnh báo sau khi tất cả các yêu cầu hoàn thành
-        Alert.alert("PMC Thông báo", "Chọn khu vực thành công", [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      })
-      .catch((error) => {
-        setStepKhuvuc(0);
-        if (error.response) {
-          // Lỗi từ phía server (có response từ server)
-          Alert.alert("PMC Thông báo", error.response.data.message, [
-            {
-              text: "Hủy",
-              onPress: () => console.log("Cancel Pressed"),
-              style: "cancel",
-            },
-            { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-          ]);
-        }
-      });
   };
 
   const postHandleSubmit = () => {
@@ -736,7 +701,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
               resizeMode="cover"
               style={{ flex: 1 }}
             >
-              {stepKhuvuc == 1 ? (
                 <View
                   style={{
                     flex: 1,
@@ -773,6 +737,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                             Số lượng: {decimalNumber(data?.length)} khu vực
                           </Text>
                         </View>
+                        {submit === true && (
+                          <Button
+                            text={"Checklist tất cả"}
+                            isLoading={loadingSubmit}
+                            backgroundColor={COLORS.bg_button}
+                            color={"white"}
+                            onPress={() => handleSubmitChecklist()}
+                          />
+                        )}
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -869,110 +842,9 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                         onPress={() => handleSubmit()}
                       />
                     )}
-
-                    {submit === true && (
-                      <Button
-                        text={"Checklist tất cả"}
-                        isLoading={loadingSubmit}
-                        backgroundColor={COLORS.bg_button}
-                        color={"white"}
-                        onPress={() => handleSubmitChecklist()}
-                      />
-                    )}
                   </View>
                 </View>
-              ) : (
-                <View
-                  style={{
-                    flex: 1,
-                    opacity: opacity,
-                  }}
-                >
-                  <View style={{ margin: 12 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignContent: "center",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <TouchableOpacity
-                        // onPress={() => handleFilterData(true, 0.5)}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 8,
-                        }}
-                      >
-                        <View
-                          style={{
-                            flexDirection: "cloumn",
-                            gap: 8,
-                          }}
-                        >
-                          <Text
-                            allowFontScaling={false}
-                            style={[styles.text, { fontSize: adjust(18) }]}
-                          >
-                            Số lượng: {decimalNumber(ent_toanha?.length)} tòa
-                            nhà
-                          </Text>
-                          <Text
-                            allowFontScaling={false}
-                            style={[styles.text, { fontSize: 14 }]}
-                          >
-                            Chọn từ 1 tòa nhà trở lên với mỗi nhân viên đi
-                            checklist.
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {ent_toanha && ent_toanha?.length > 0 && (
-                    <>
-                      <FlatList
-                        style={{
-                          margin: 12,
-                          flex: 1,
-                          marginBottom: 100,
-                        }}
-                        data={ent_toanha}
-                        renderItem={({ item, index, separators }) =>
-                          renderItemToanha(item, index)
-                        }
-                        ItemSeparatorComponent={() => (
-                          <View style={{ height: 16 }} />
-                        )}
-                        keyExtractor={(item, index) =>
-                          `${item?.ID_Checklist}_${index}`
-                        }
-                      />
-                    </>
-                  )}
-
-                  <View
-                    style={{
-                      position: "absolute",
-                      bottom: 40,
-                      flexDirection: "row",
-                      justifyContent: "space-around",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    {checkKhuvuc.length > 0 && (
-                      <Button
-                        text={"Chọn khu vực"}
-                        backgroundColor={COLORS.bg_button}
-                        color={"white"}
-                        onPress={() => handleSubmitKhuvuc()}
-                      />
-                    )}
-                  </View>
-                </View>
-              )}
+           
             </ImageBackground>
 
             <Modal
