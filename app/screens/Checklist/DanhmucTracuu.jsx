@@ -430,6 +430,8 @@ const DanhmucTracuu = () => {
     setPage(0);
   }, [numberOfItemsPerPage]);
 
+  console.log('newActionCheckList',newActionCheckList[0])
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -793,6 +795,12 @@ const DanhmucTracuu = () => {
                         {
                           newActionCheckList[0]?.tb_checklistc?.ent_giamsat
                             ?.Hoten
+                        }
+                      </Text>
+                      <Text allowFontScaling={false}  style={styles.textModal}>
+                        Giờ checklist:{" "}
+                        {
+                          newActionCheckList[0]?.Gioht
                         }
                       </Text>
                       <Text allowFontScaling={false}  style={styles.textModal}>

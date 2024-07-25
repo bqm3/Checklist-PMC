@@ -21,7 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   ent_khuvuc_get,
   ent_toanha_get,
-  ent_checklist_mul_hm,
+  ent_checklist_mul_hm_return,
 } from "../../redux/actions/entActions";
 import { COLORS, SIZES } from "../../constants/theme";
 import Button from "../../components/Button/Button";
@@ -34,8 +34,9 @@ import ChecklistContext from "../../context/ChecklistContext";
 import adjust from "../../adjust";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Network from "expo-network";
+import ConnectContext from "../../context/ConnectContext";
 
-const ThucHienKhuvuc = ({ route, navigation }) => {
+const ThucHienKhuvucLai = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Toanha, ID_Khuvucs } =
     route.params;
 
@@ -50,6 +51,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   } = useContext(DataContext);
   const { setDataChecklistFilterContext, dataChecklistFilterContext } =
     useContext(ChecklistContext);
+
+  const { isConnect, saveConnect } = useContext(ConnectContext);
 
   const dispath = useDispatch();
   const { ent_khuvuc, ent_checklist_detail, ent_toanha } = useSelector(
@@ -67,16 +70,14 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const [dataSelect, setDataSelect] = useState([]);
   const [data, setData] = useState([]);
 
-  const [defaultActionDataChecklist, setDataChecklistDefault] = useState(
-    []
-  );
+  const [defaultActionDataChecklist, setDataChecklistDefault] = useState([]);
   const [dataChecklistFaild, setDataChecklistFaild] = useState([]);
 
   const [checkKhuvuc, setCheckKhuvuc] = useState([]);
-  // const toanhaIds = checkKhuvuc.map((item) => item.ID_Toanha);
-
   const init_checklist = async () => {
-    await dispath(ent_checklist_mul_hm(dataHangmuc, ID_Calv, ID_ChecklistC));
+    await dispath(
+      ent_checklist_mul_hm_return(dataHangmuc, ID_Calv, ID_ChecklistC)
+    );
   };
 
   useEffect(() => {
@@ -122,7 +123,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       try {
         // Retrieve the item from AsyncStorage
         const network = await AsyncStorage.getItem("checkNetwork");
-        if (network === "1") {
+        if (network === "1" && isConnect) {
           setSubmit(true);
         }
 
@@ -139,7 +140,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
     // Call the async function
     fetchNetworkStatus();
-  }, [dataChecklistFilterContext]);
+  }, [dataChecklistFilterContext, isConnect]);
 
   useEffect(() => {
     init_checklist();
@@ -200,7 +201,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       setIsScan(false);
       setModalVisibleQr(false);
       setOpacity(1);
-    } catch (error) { 
+    } catch (error) {
       if (error.response) {
         // Lỗi từ phía server (có response từ server)
         Alert.alert("PMC Thông báo", error.response.data.message, [
@@ -283,12 +284,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           defaultActionDataChecklist.length === 0 &&
           dataChecklistFaild.length === 0
         ) {
+          await AsyncStorage.removeItem("checkNetwork");
           // Hiển thị thông báo cho người dùng
           Alert.alert("PMC Thông báo", "Không có checklist để kiểm tra!", [
             { text: "OK", onPress: () => console.log("OK Pressed") },
           ]);
           setLoadingSubmit(false);
-          await AsyncStorage.removeItem("checkNetwork");
+          setSubmit(false)
+          saveConnect(false)
+         
         }
         // Kiểm tra dữ liệu và xử lý tùy thuộc vào trạng thái của `defaultActionDataChecklist` và `dataChecklistFaild`
         if (
@@ -443,6 +447,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       setLoadingSubmit(false);
       await AsyncStorage.removeItem("checkNetwork");
       setSubmit(false);
+      saveConnect(false)
       // Hiển thị cảnh báo sau khi tất cả các yêu cầu hoàn thành
       Alert.alert("PMC Thông báo", "Checklist thành công", [
         {
@@ -549,6 +554,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       await Promise.all([requestFaild, requestDone]);
       await AsyncStorage.removeItem("checkNetwork");
       setSubmit(false);
+      saveConnect(false)
       postHandleSubmit();
       setLoadingSubmit(false);
       // Hiển thị thông báo thành công
@@ -773,6 +779,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                             Số lượng: {decimalNumber(data?.length)} khu vực
                           </Text>
                         </View>
+                        {submit === true && (
+                          <Button
+                            text={"Checklist tất cả"}
+                            isLoading={loadingSubmit}
+                            backgroundColor={COLORS.bg_button}
+                            color={"white"}
+                            onPress={() => handleSubmitChecklist()}
+                          />
+                        )}
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -867,16 +882,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                         backgroundColor={COLORS.bg_button}
                         color={"white"}
                         onPress={() => handleSubmit()}
-                      />
-                    )}
-
-                    {submit === true && (
-                      <Button
-                        text={"Checklist tất cả"}
-                        isLoading={loadingSubmit}
-                        backgroundColor={COLORS.bg_button}
-                        color={"white"}
-                        onPress={() => handleSubmitChecklist()}
                       />
                     )}
                   </View>
@@ -1006,7 +1011,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   );
 };
 
-export default ThucHienKhuvuc;
+export default ThucHienKhuvucLai;
 
 const styles = StyleSheet.create({
   container: {

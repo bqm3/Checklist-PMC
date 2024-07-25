@@ -232,7 +232,6 @@ const ModalChecklistC = ({
                 width={"100%"}
                 backgroundColor={"grey"}
                 color={"white"}
-                isLoading={isLoading}
                 onPress={handleClosePopUp}
               />
             </View>

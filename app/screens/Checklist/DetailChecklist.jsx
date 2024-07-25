@@ -46,6 +46,7 @@ import * as Network from "expo-network";
 import adjust from "../../adjust";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "../../components/Active/Checkbox";
+import ConnectContext from "../../context/ConnectContext";
 
 const DetailChecklist = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Hangmuc, hangMuc, Hangmuc } =
@@ -54,6 +55,8 @@ const DetailChecklist = ({ route, navigation }) => {
   const { isLoadingDetail } = useSelector((state) => state.entReducer);
   const { setHangMuc, HangMucDefault, setHangMucDefault } =
     useContext(DataContext);
+
+    const {isConnect, saveConnect} = useContext(ConnectContext);
   const { dataChecklistFilterContext, setDataChecklistFilterContext } =
     useContext(ChecklistContext);
   const [isConnected, setIsConnected] = useState(false);
@@ -62,7 +65,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
   const [dataChecklistFilter, setDataChecklistFilter] = useState([]);
   const [newActionDataChecklist, setNewActionDataChecklist] = useState([]);
-  const [defaultActionDataChecklist, setDefaultActionDataChecklist] = useState(
+  const [defaultActionDataChecklist, setDataChecklistDefault] = useState(
     []
   );
   const [dataChecklistFaild, setDataChecklistFaild] = useState([]);
@@ -102,7 +105,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
     setDataChecklistFilter(dataChecklist);
     setNewActionDataChecklist(dataChecklistAction);
-    setDefaultActionDataChecklist(dataChecklistDefault);
+    setDataChecklistDefault(dataChecklistDefault);
     setDataChecklistFaild(dataChecklistActionWithoutDefault);
   }, [dataChecklistFilterContext, ID_Hangmuc]);
 
@@ -160,7 +163,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
       setDataChecklistFilter(updateDataChecklist);
       setNewActionDataChecklist(dataChecklistAction);
-      setDefaultActionDataChecklist(dataChecklistDefault);
+      setDataChecklistDefault(dataChecklistDefault);
       setDataChecklistFaild(dataChecklistActionWithoutDefault);
 
       const data2Map = new Map(
@@ -182,7 +185,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
       setDataChecklistFilter(revertDataChecklist);
       setNewActionDataChecklist([]);
-      setDefaultActionDataChecklist([]);
+      setDataChecklistDefault([]);
       setDataChecklistFaild([]);
     }
   };
@@ -332,7 +335,7 @@ const DetailChecklist = ({ route, navigation }) => {
     }
 
     setDataChecklistFaild([...mergedArrImage]);
-    setDefaultActionDataChecklist(mergedArrCheck);
+    setDataChecklistDefault(mergedArrCheck);
     setNewActionDataChecklist([...mergedArrImage, ...mergedArrCheck]);
     setDataChecklistFilter(data);
 
@@ -458,6 +461,8 @@ const DetailChecklist = ({ route, navigation }) => {
       if (networkState.isConnected) {
         setLoadingSubmit(true);
         setActiveAll(false);
+        saveConnect(false)
+        
         if (
           defaultActionDataChecklist.length === 0 &&
           dataChecklistFaild.length === 0
@@ -492,11 +497,12 @@ const DetailChecklist = ({ route, navigation }) => {
           await hadlChecklistAll();
         }
       } else {
+        await AsyncStorage.setItem("checkNetwork", "1");
         Alert.alert(
           "Không có kết nối mạng",
           "Vui lòng kiểm tra kết nối mạng của bạn."
         );
-        await AsyncStorage.setItem("checkNetwork", "1");
+        saveConnect(true)
       }
     } catch (error) {
       // Cập nhật sau khi hoàn thành xử lý API} catch (error) {
@@ -830,7 +836,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
     // Optionally, reset newActionDataChecklist, defaultActionDataChecklist, and dataChecklistFaild if needed
     setNewActionDataChecklist([]);
-    setDefaultActionDataChecklist([]);
+    setDataChecklistDefault([]);
     setDataChecklistFaild([]);
   };
 
@@ -853,7 +859,7 @@ const DetailChecklist = ({ route, navigation }) => {
     setTieuchuan(item.Tieuchuan);
     setModalVisibleTieuChuan(true);
     setIndex(index);
-  });
+  },[]);
 
   // close modal bottom sheet
   const handlePopupClear = useCallback(() => {

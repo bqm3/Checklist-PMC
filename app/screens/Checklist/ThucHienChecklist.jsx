@@ -672,7 +672,7 @@ const ThucHienChecklist = ({ navigation }) => {
               }}
               numberOfLines={2}
             >
-              {item?.TongC}/{item?.Tong}
+             {item?.Tong}
             </Text>
           </DataTable.Cell>
           <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
