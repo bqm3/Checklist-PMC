@@ -430,8 +430,6 @@ const DanhmucTracuu = () => {
     setPage(0);
   }, [numberOfItemsPerPage]);
 
-  console.log('newActionCheckList',newActionCheckList[0])
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -797,12 +795,7 @@ const DanhmucTracuu = () => {
                             ?.Hoten
                         }
                       </Text>
-                      <Text allowFontScaling={false}  style={styles.textModal}>
-                        Giờ checklist:{" "}
-                        {
-                          newActionCheckList[0]?.Gioht
-                        }
-                      </Text>
+                     
                       <Text allowFontScaling={false}  style={styles.textModal}>
                         Ca làm việc:{" "}
                         {newActionCheckList[0]?.tb_checklistc?.ent_calv?.Tenca}{" "}
@@ -819,7 +812,13 @@ const DanhmucTracuu = () => {
                         )
                       </Text>
                       <Text allowFontScaling={false}  style={styles.textModal}>
-                        Kết quả: {newActionCheckList[0]?.Ketqua}
+                        Giờ checklist:{" "}
+                        {
+                          newActionCheckList[0]?.Gioht
+                        }
+                      </Text>
+                      <Text allowFontScaling={false}  style={styles.textModal}>
+                        Kết quả: {newActionCheckList[0]?.Ketqua} {newActionCheckList[0]?.ent_checklist?.isCheck == 0 ? '' : `${newActionCheckList[0]?.ent_checklist?.Giatrinhan}`}
                       </Text>
                       <Text allowFontScaling={false}  style={styles.textModal}>
                         Ghi chú: {newActionCheckList[0]?.Ghichu}
@@ -832,7 +831,7 @@ const DanhmucTracuu = () => {
                   style={styles.buttonImage}
                 >
                   <Text allowFontScaling={false}  style={styles.textImage}>
-                    Close
+                    Đóng
                   </Text>
                 </TouchableOpacity>
               </View>
