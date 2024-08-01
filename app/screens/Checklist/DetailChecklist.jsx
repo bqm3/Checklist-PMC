@@ -682,8 +682,8 @@ const DetailChecklist = ({ route, navigation }) => {
           formData.append(`Images_${index}`, file);
           formData.append("Anh", file.name);
         } else {
-          formData.append("Anh", "");
-          formData.append(`Images_${index}`, {});
+          // formData.append("Anh", "");
+          // formData.append(`Images_${index}`, {});
         }
       });
 
