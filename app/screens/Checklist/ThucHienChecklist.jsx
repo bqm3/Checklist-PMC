@@ -42,6 +42,7 @@ import {
   ent_hangmuc_get,
   ent_khuvuc_get,
 } from "../../redux/actions/entActions";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { tb_checklistc_get } from "../../redux/actions/tbActions";
 import axios from "axios";
 import { BASE_URL } from "../../constants/config";
@@ -52,6 +53,7 @@ import DataContext from "../../context/DataContext";
 import adjust from "../../adjust";
 import { useFocusEffect } from "@react-navigation/native";
 import ButtonSubmit from "../../components/Button/ButtonSubmit";
+
 // import mime from "mime";
 
 const numberOfItemsPerPageList = [20, 30, 50];
@@ -433,8 +435,9 @@ const ThucHienChecklist = ({ navigation }) => {
             },
           })
           .then((response) => {
+            clearAsyncStorage()
             handleAdd();
-            handleClosePopUp()
+            handleClosePopUp();
             int_checklistc();
             handleCloseSheetImage();
             setLoadingSubmit(false);
@@ -483,6 +486,15 @@ const ThucHienChecklist = ({ navigation }) => {
           ]);
         }
       }
+    }
+  };
+
+  const clearAsyncStorage = async () => {
+    try {
+      await AsyncStorage.removeItem("dataChecklist");
+      await AsyncStorage.removeItem("checkNetwork");
+    } catch (error) {
+      console.error("Error clearing AsyncStorage:", error);
     }
   };
 
@@ -672,7 +684,7 @@ const ThucHienChecklist = ({ navigation }) => {
               }}
               numberOfLines={2}
             >
-             {item?.Tong}
+              {item?.Tong}
             </Text>
           </DataTable.Cell>
           <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
@@ -993,7 +1005,6 @@ const ThucHienChecklist = ({ navigation }) => {
                         isLoading={loadingSubmit}
                         handleClosePopUp={handleClosePopUp}
                       />
-                     
                     </View>
                   </View>
                 </View>

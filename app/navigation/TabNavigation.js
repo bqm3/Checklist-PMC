@@ -1,6 +1,6 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Image, Button, Text, TouchableOpacity, Platform } from "react-native";
+import { Image, Button, Text, TouchableOpacity, Platform, Alert } from "react-native";
 import {
   ThucHienChecklist,
   HomeScreen,
@@ -12,7 +12,7 @@ import {
   DanhmucChecklist,
   DanhmucTracuu,
   ChecklistLaiScreen,
-  ThuchienKhuvucLai
+  ThuchienKhuvucLai,
 } from "../screens/Checklist";
 import { COLORS } from "../constants/theme";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -223,12 +223,11 @@ const HomeStack = ({ navigation }) => {
         lazy={false}
         options={({ navigation, route }) => ({
           headerShown: true,
-
           headerTitle: () => (
             <Text
               allowFontScaling={false}
               style={{
-                fontSize: adjust(20),
+                fontSize: 20, // Adjust font size as needed
                 fontWeight: "700",
                 color: "white",
               }}
@@ -237,21 +236,39 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(
+                  "PMC",
+                  "Thoát khỏi khu vực sẽ mất hết checklist đã kiểm tra. Vui lòng xác nhận",
+                  [
+                    {
+                      text: "Hủy", 
+                      onPress: () => console.log("Hủy Pressed"),
+                      style: "cancel",
+                    },
+                    {
+                      text: "Xác nhận",
+                      onPress: () => navigation.goBack(),
+                    },
+                  ]
+                );
+              }}
+            >
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Ionicons name="chevron-back" size={28} color="white" />
               )}
             </TouchableOpacity>
           ),
           headerTitleAlign: "center",
           headerStyle: {
-            backgroundColor: COLORS.bg_button,
+            backgroundColor: COLORS.bg_button, // Replace with your color
           },
           headerBackTitleVisible: false,
         })}
       />
 
-<Stack.Screen
+      <Stack.Screen
         name="Thực hiện khu vực lại"
         component={ThuchienKhuvucLai}
         lazy={false}

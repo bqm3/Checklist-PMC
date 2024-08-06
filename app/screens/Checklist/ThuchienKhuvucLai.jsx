@@ -236,19 +236,19 @@ const ThucHienKhuvucLai = ({ route, navigation }) => {
     }
   };
 
-  const toggleTodo = async (item) => {
-    const isExistIndex = dataSelect.find(
-      (existingItem) => existingItem === item
-    );
+  // const toggleTodo = async (item) => {
+  //   const isExistIndex = dataSelect.find(
+  //     (existingItem) => existingItem === item
+  //   );
 
-    // Nếu item đã tồn tại, xóa item đó đi
-    if (isExistIndex) {
-      setDataSelect([]);
-    } else {
-      // Nếu item chưa tồn tại, thêm vào mảng mới
-      setDataSelect([item]);
-    }
-  };
+  //   // Nếu item đã tồn tại, xóa item đó đi
+  //   if (isExistIndex) {
+  //     setDataSelect([]);
+  //   } else {
+  //     // Nếu item chưa tồn tại, thêm vào mảng mới
+  //     setDataSelect([item]);
+  //   }
+  // };
 
   const toggleSelectToanha = async (item) => {
     setCheckKhuvuc((prevDataSelect) => {
@@ -606,7 +606,7 @@ const ThucHienKhuvucLai = ({ route, navigation }) => {
   const renderItem = (item, index) => {
     return (
       <TouchableOpacity
-        onPress={() => toggleTodo(item)}
+        // onPress={() => toggleTodo(item)}
         style={[
           styles.content,
           {
@@ -792,7 +792,7 @@ const ThucHienKhuvucLai = ({ route, navigation }) => {
                       }}
                     />
                    
-                    {dataSelect[0] && (
+                    {/* {dataSelect[0] && (
                       <Button
                         text={"Vào khu vực"}
                         isLoading={loadingSubmit}
@@ -800,7 +800,7 @@ const ThucHienKhuvucLai = ({ route, navigation }) => {
                         color={"white"}
                         onPress={() => handleSubmit()}
                       />
-                    )}
+                    )} */}
                   </View>
                 </View>
               
