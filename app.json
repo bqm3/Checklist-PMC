@@ -13,6 +13,12 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#ffffff",
+      "iosDisplayInForeground": true,
+      "androidMode": "default"
+    },
     "userInterfaceStyle": "automatic",
     "android": {
       "adaptiveIcon": {
@@ -98,9 +104,7 @@
     "updates": {
       "url": "https://u.expo.dev/88067883-8168-4e0c-8f05-124ae86a6067"
     },
-    "notification": {
-      "iosDisplayInForeground": true
-    },
+    
     "owner": "buiminh30"
   }
 }
