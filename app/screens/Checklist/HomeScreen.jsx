@@ -91,13 +91,13 @@ const HomeScreen = ({ navigation }) => {
   const renderItemPSH = ({ item, index }) => (
     <ItemHomePSH item={item} index={index} />
   );
+  console.log('user',user)
 
-  console.log("user.ent_duan.Logo", user);
   return (
     <ImageBackground
       source={require("../../../assets/bg_new.png")}
-      resizeMode="cover"
-      style={{ flex: 1 }}
+      resizeMode="stretch"
+      style={{ flex: 1, width: '100%' }}
     >
       {user?.ent_chucvu?.Chucvu == "PSH" ? (
         <>
@@ -138,7 +138,7 @@ const HomeScreen = ({ navigation }) => {
               <Image
                 source={{ uri: user.ent_duan.Logo }}
                 resizeMode="contain"
-                style={{ height: adjust(80), width: adjust(200) }}
+                style={{ height: adjust(70), width: adjust(180) }}
               />
             ) : (
               <Image
@@ -220,7 +220,7 @@ const HomeScreen = ({ navigation }) => {
                 fontSize: adjust(16),
               }}
             >
-              Người Giám sát chỉ thực hiện công việc Check list, Tra cứu và Đổi
+              Người Giám sát chỉ thực hiện công việc Checklist, Tra cứu và Đổi
               mật khẩu.
             </Text>
             <Text
@@ -234,7 +234,7 @@ const HomeScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          <CopyRight />
+          {/* <CopyRight /> */}
         </View>
       )}
     </ImageBackground>
