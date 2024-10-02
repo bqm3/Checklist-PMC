@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Image,
+  BackHandler,
 } from "react-native";
 import React, {
   useRef,
@@ -32,7 +33,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import * as Location from "expo-location";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Entypo, MaterialIcons, AntDesign } from "@expo/vector-icons";
+import { Entypo, MaterialIcons, AntDesign, Ionicons } from "@expo/vector-icons";
 import { COLORS, SIZES } from "../../constants/theme";
 import ActiveChecklist from "../../components/Active/ActiveCheckList";
 import Button from "../../components/Button/Button";
@@ -48,6 +49,8 @@ import adjust from "../../adjust";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "../../components/Active/Checkbox";
 import ConnectContext from "../../context/ConnectContext";
+import WebView from "react-native-webview";
+import axiosClient from "../../api/axiosClient";
 
 const DetailChecklist = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Hangmuc, hangMuc, Hangmuc } =
@@ -58,12 +61,16 @@ const DetailChecklist = ({ route, navigation }) => {
     useContext(DataContext);
 
   const { isConnect, saveConnect } = useContext(ConnectContext);
-  const { dataChecklistFilterContext, setDataChecklistFilterContext } =
-    useContext(ChecklistContext);
+  const {
+    dataChecklistFilterContext,
+    setDataChecklistFilterContext,
+    setLocationContext,
+  } = useContext(ChecklistContext);
   const [isConnected, setIsConnected] = useState(false);
 
   const { user, authToken } = useSelector((state) => state.authReducer);
 
+  const snapPoints = useMemo(() => ["70%"], []);
   const [dataChecklistFilter, setDataChecklistFilter] = useState([]);
   const [newActionDataChecklist, setNewActionDataChecklist] = useState([]);
   const [defaultActionDataChecklist, setDataChecklistDefault] = useState([]);
@@ -75,18 +82,38 @@ const DetailChecklist = ({ route, navigation }) => {
   const [index, setIndex] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisibleTieuChuan, setModalVisibleTieuChuan] = useState(false);
-  const [modalVisibleQr, setModalVisibleQr] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [isScan, setIsScan] = useState(false);
   const [activeAll, setActiveAll] = useState(false);
   const [location, setLocation] = useState(null);
+  const [show, setShow] = useState(false);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
+      setLocationContext(location);
     })();
-  }, [defaultActionDataChecklist, dataChecklistFaild]);
+  }, [dataChecklistFaild, defaultActionDataChecklist]);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (isBottomSheetOpen) {
+        handleBackAnroid();
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [isBottomSheetOpen]);
 
   useEffect(() => {
     const dataChecklist = dataChecklistFilterContext?.filter(
@@ -114,38 +141,63 @@ const DetailChecklist = ({ route, navigation }) => {
     setNewActionDataChecklist(dataChecklistAction);
     setDataChecklistDefault(dataChecklistDefault);
     setDataChecklistFaild(dataChecklistActionWithoutDefault);
-  }, [dataChecklistFilterContext, ID_Hangmuc]);
-
-  const handleChange = (key, value, it) => {
-    const updatedDataChecklist = dataChecklistFilter?.map((item, i) => {
-      if (item.ID_Checklist === it.ID_Checklist) {
-        return {
-          ...item,
-          [key]: value,
-          gioht: moment().format("LTS"),
-        };
-      }
-      return item;
-    });
-
-    handleSetData(key, updatedDataChecklist, it);
-    // }
-  };
+  }, [ID_Hangmuc]);
 
   const handleCheckAll = (value) => {
     setActiveAll(value);
     if (value) {
       const updateDataChecklist = dataChecklistFilter?.map((item, i) => {
-        if (item.Tinhtrang == 0) {
-          return {
-            ...item,
-            valueCheck: item.Giatridinhdanh,
-            gioht: moment().format("LTS"),
-          };
+        if (
+          item.Anh == null &&
+          item.GhichuChitiet == "" &&
+          item.isCheck == 0 &&
+          item.Tinhtrang == 0
+        ) {
+          if (item.valueCheck == null) {
+            return {
+              ...item,
+              valueCheck: item.Giatridinhdanh,
+              Gioht: moment().format("LTS"),
+            };
+          } else if (item.valueCheck == item.Giatridinhdanh) {
+            return {
+              ...item,
+              valueCheck: item.Giatridinhdanh,
+              Gioht: moment().format("LTS"),
+            };
+          } else {
+            return {
+              ...item,
+              Gioht: moment().format("LTS"),
+            };
+          }
+        } else if (
+          (item.Anh !== null || item.GhichuChitiet !== "") &&
+          item.isCheck == 0 &&
+          item.Tinhtrang == 0
+        ) {
+          if (item.valueCheck == null) {
+            return {
+              ...item,
+              valueCheck: item.Giatridinhdanh,
+              Gioht: moment().format("LTS"),
+            };
+          } else if (item.valueCheck == item.Giatridinhdanh) {
+            return {
+              ...item,
+              valueCheck: item.Giatridinhdanh,
+              Gioht: moment().format("LTS"),
+            };
+          } else {
+            return {
+              ...item,
+              Gioht: moment().format("LTS"),
+            };
+          }
         } else {
           return {
             ...item,
-            gioht: moment().format("LTS"),
+            Gioht: moment().format("LTS"),
           };
         }
       });
@@ -161,17 +213,9 @@ const DetailChecklist = ({ route, navigation }) => {
           item.Anh === null
       );
 
-      const dataChecklistActionWithoutDefault = updateDataChecklist.filter(
-        (item) =>
-          !dataChecklistDefault.some(
-            (defaultItem) => defaultItem.ID_Checklist === item.ID_Checklist
-          )
-      );
-
       setDataChecklistFilter(updateDataChecklist);
       setNewActionDataChecklist(dataChecklistAction);
       setDataChecklistDefault(dataChecklistDefault);
-      setDataChecklistFaild(dataChecklistActionWithoutDefault);
 
       const data2Map = new Map(
         updateDataChecklist.map((item) => [item.ID_Checklist, item])
@@ -183,282 +227,209 @@ const DetailChecklist = ({ route, navigation }) => {
       setDataChecklistFilterContext(updatedData1);
     } else {
       const revertDataChecklist = dataChecklistFilter?.map((item) => {
-        return {
-          ...item,
-          valueCheck: null,
-          gioht: item.giohtBeforeUpdate || item.gioht, // Use a previous value or initial value if available
-        };
+        if (
+          item.Anh == null &&
+          item.GhichuChitiet == "" &&
+          item.isCheck == 0 &&
+          item.Tinhtrang == 0 &&
+          item.valueCheck == item.Giatridinhdanh
+        ) {
+          return {
+            ...item,
+            valueCheck: null,
+            Gioht: moment().format("LTS"),
+          };
+        } else {
+          return {
+            ...item,
+          };
+        }
       });
 
       setDataChecklistFilter(revertDataChecklist);
-      setNewActionDataChecklist([]);
       setDataChecklistDefault([]);
-      setDataChecklistFaild([]);
+      const data2Map = new Map(
+        revertDataChecklist.map((item) => [item.ID_Checklist, item])
+      );
+
+      const updatedData1 = dataChecklistFilterContext.map((item) =>
+        data2Map.has(item.ID_Checklist) ? data2Map.get(item.ID_Checklist) : item
+      );
+      setDataChecklistFilterContext(updatedData1);
     }
   };
 
-  // set data checklist and image || ghichu
-  const handleSetData = async (key, data, it) => {
-    let mergedArrCheck = [...defaultActionDataChecklist];
-    let mergedArrImage = [...dataChecklistFaild];
+  // click item checklist
+  const handleItemClick = (value, status, key, itemData) => {
+    let updatedDataChecklist = [];
+    let newItem = [];
+    if (status == "close") {
+      updatedDataChecklist = dataChecklistFilter?.map((item, i) => {
+        if (item.ID_Checklist == itemData.ID_Checklist) {
+          return {
+            ...item,
+            Anh: value?.Anh ? value?.Anh : null,
+            GhichuChitiet: value?.GhichuChitiet ? value?.GhichuChitiet : "",
+            valueCheck: value?.valueCheck ? value?.valueCheck : null,
+            Gioht: moment().format("LTS"),
+          };
+        }
+        return item;
+      });
+      newItem = {
+        ...itemData,
+        Anh: value?.Anh ? value?.Anh : null,
+        GhichuChitiet: value?.GhichuChitiet ? value?.GhichuChitiet : "",
+        valueCheck: value?.valueCheck ? value?.valueCheck : null,
+        Gioht: moment().format("LTS"),
+      };
+    } else {
+      updatedDataChecklist = dataChecklistFilter?.map((item, i) => {
+        if (item.ID_Checklist == itemData.ID_Checklist) {
+          return {
+            ...item,
+            [key]: value ? value : null,
+            Gioht: moment().format("LTS"),
+          };
+        }
+        return item;
+      });
+
+      newItem = {
+        ...itemData,
+        [key]: value ? value : null,
+        Gioht: moment().format("LTS"),
+      };
+    }
+
+    handleSetData(status, updatedDataChecklist, newItem);
+  };
+
+  // set data checklist
+  const handleSetData = async (status, dataChecklist, it) => {
+    let mergedArrClick = [...defaultActionDataChecklist];
+    let mergedArrOption = [...dataChecklistFaild];
 
     // newDataChecklist là data được chọn.
-    let newDataChecklist = data.filter((item) => item.valueCheck !== null);
+    let newDataChecklist = dataChecklist.filter(
+      (item) => item.valueCheck !== null
+    );
+    const indexFaild = newDataChecklist.findIndex((item) => {
+      return (
+        item.ID_Checklist === it.ID_Checklist &&
+        item.Giatridinhdanh === item.valueCheck &&
+        it.Anh === null &&
+        it.GhichuChitiet === ""
+      );
+    });
 
-    // Clear item checklist nếu valueCheck không phải là null
-    if (it.valueCheck !== null) {
-      if (key === "option") {
-        const indexFaild = newDataChecklist.findIndex((item) => {
-          return (
-            item.ID_Checklist === it.ID_Checklist &&
-            item.Giatridinhdanh === item.valueCheck &&
-            it.Anh === null &&
-            it.GhichuChitiet === ""
-          );
-        });
-
-        if (indexFaild === -1) {
-          if (
-            !mergedArrImage.some(
-              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-            )
-          ) {
-            mergedArrImage.push(it);
-          }
-          const indexDefault = mergedArrCheck.findIndex(
-            (item) => item.ID_Checklist === it.ID_Checklist
-          );
-          if (indexDefault !== -1) {
-            mergedArrCheck.splice(indexDefault, 1);
-          }
-        } else {
-          if (
-            !mergedArrCheck.some(
-              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-            )
-          ) {
-            mergedArrCheck.push(it);
-          }
-          const indexDefault = mergedArrImage.findIndex(
-            (item) => item.ID_Checklist === it.ID_Checklist
-          );
-          if (indexDefault !== -1) {
-            mergedArrImage.splice(indexDefault, 1);
-          }
-        }
-      } else if (key === "active") {
-        const indexFaild = mergedArrImage.findIndex(
-          (item) => item.ID_Checklist === it.ID_Checklist
-        );
-        if (indexFaild !== -1) {
-          mergedArrImage.splice(indexFaild, 1);
-        }
-        const indexDefault = mergedArrCheck.findIndex(
-          (item) => item.ID_Checklist === it.ID_Checklist
-        );
-        if (indexDefault !== -1) {
-          mergedArrCheck.splice(indexDefault, 1);
-        }
-      } else if (key === "isCheck") {
-        const indexFaild = newDataChecklist.findIndex((item) => {
-          return (
-            item.ID_Checklist === it.ID_Checklist &&
-            it.Anh === null &&
-            it.GhichuChitiet === ""
-          );
-        });
-        if (indexFaild === -1) {
-          if (
-            !mergedArrImage.some(
-              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-            )
-          ) {
-            mergedArrImage.push(it);
-          }
-          const indexDefault = mergedArrCheck.findIndex(
-            (item) => item.ID_Checklist === it.ID_Checklist
-          );
-          if (indexDefault !== -1) {
-            mergedArrCheck.splice(indexDefault, 1);
-          }
-        } else {
-          if (
-            !mergedArrCheck.some(
-              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-            )
-          ) {
-            mergedArrCheck.push(it);
-          }
-          const indexDefault = mergedArrImage.findIndex(
-            (item) => item.ID_Checklist === it.ID_Checklist
-          );
-          if (indexDefault !== -1) {
-            mergedArrImage.splice(indexDefault, 1);
-          }
-        }
+    if (it.valueCheck === null) {
+      if (
+        !mergedArrOption.some(
+          (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
+        )
+      ) {
+        mergedArrOption.push(it);
       }
     } else {
-      if (key === "option" || key === "active") {
-        const indexFaild = newDataChecklist.find(
-          (item) =>
-            item.ID_Checklist === it.ID_Checklist &&
-            item.valueCheck !== item.Giatridinhdanh
+      if (status === "click") {
+        if (
+          !mergedArrClick.some(
+            (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
+          )
+        ) {
+          mergedArrClick.push(it);
+        }
+      }
+
+      if (status === "option" || status === "close") {
+        const indexDefault = mergedArrClick.findIndex(
+          (item) => item.ID_Checklist === it.ID_Checklist
         );
 
-        if (indexFaild) {
-          if (
-            !mergedArrImage.some(
-              (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-            )
-          ) {
-            mergedArrImage.push(it);
-          }
+        // Xóa phần tử nếu có trong mergedArrClick
+        if (indexDefault !== -1) {
+          mergedArrClick.splice(indexDefault, 1);
+        }
 
-          const indexCheck = mergedArrCheck.findIndex((item) => {
-            return (
-              item.ID_Checklist === it.ID_Checklist &&
-              it.valueCheck === item.valueCheck &&
-              it.Anh === null &&
-              it.GhichuChitiet === ""
-            );
-          });
-          if (indexCheck !== -1) {
-            mergedArrCheck.splice(indexCheck, 1);
+        // Tìm phần tử trong mergedArrOption theo ID_Checklist
+        const indexOption = mergedArrOption.findIndex(
+          (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
+        );
+        // Kiểm tra nếu phần tử đã tồn tại trong mergedArrOption
+        if (indexOption !== -1) {
+          const existingItem = mergedArrOption[indexOption];
+          // Kiểm tra nếu dữ liệu của 'it' khác so với dữ liệu hiện tại
+          if (JSON.stringify(existingItem) !== JSON.stringify(it)) {
+            // Nếu khác, thay thế phần tử cũ bằng phần tử mới
+            mergedArrOption.splice(indexOption, 1, it);
           }
         } else {
-          const found = mergedArrCheck.some(
-            (existingItem) =>
-              it.ID_Checklist === existingItem.ID_Checklist &&
-              item.Giatridinhdanh === existingItem.valueCheck &&
-              it.Anh === null &&
-              it.GhichuChitiet === ""
-          );
-          if (!found) {
-            mergedArrCheck.push(it);
-          }
+          // Nếu phần tử chưa tồn tại, thêm 'it' mới vào
+          mergedArrOption.push(it);
         }
       }
     }
+    setDataChecklistFaild([...mergedArrOption]);
+    setDataChecklistDefault(mergedArrClick);
+    setNewActionDataChecklist([...mergedArrOption, ...mergedArrClick]);
+    setDataChecklistFilter(dataChecklist);
 
-    setDataChecklistFaild([...mergedArrImage]);
-    setDataChecklistDefault(mergedArrCheck);
-    setNewActionDataChecklist([...mergedArrImage, ...mergedArrCheck]);
-    setDataChecklistFilter(data);
+    const data2Map = new Map(
+      dataChecklist.map((item) => [item.ID_Checklist, item])
+    );
 
-    const data2Map = new Map(data.map((item) => [item.ID_Checklist, item]));
+    const updatedData = dataChecklistFilterContext.map((item) =>
+      data2Map.has(item.ID_Checklist) ? data2Map.get(item.ID_Checklist) : item
+    );
+    setDataChecklistFilterContext(updatedData);
+  };
 
+  const handleItemClear = (itemID) => {
+    // Cập nhật dataChecklistFilter với item được clear
+    const updatedDataChecklist = dataChecklistFilter?.map((item) => {
+      if (item.ID_Checklist === itemID) {
+        return {
+          ...item,
+          valueCheck: null, // Xóa giá trị của item này
+          Gioht: moment().format("LTS"),
+          Anh: null,
+          Ghichu: "",
+        };
+      }
+      return item; // Giữ nguyên các item khác
+    });
+
+    // Lọc lại newActionDataChecklist để loại bỏ item đã clear
+    const updatedActionDataChecklist = newActionDataChecklist.filter(
+      (item) => item.ID_Checklist !== itemID
+    );
+
+    // Cập nhật lại dataChecklistDefault nếu item thuộc về danh sách default
+    const updatedDataChecklistDefault = defaultActionDataChecklist.filter(
+      (item) => item.ID_Checklist !== itemID
+    );
+
+    // Cập nhật lại dataChecklistFaild
+    const updatedDataChecklistFaild = dataChecklistFaild.filter(
+      (item) => item.ID_Checklist !== itemID
+    );
+
+    // Cập nhật lại state sau khi xóa item
+    setDataChecklistFilter(updatedDataChecklist);
+    setNewActionDataChecklist(updatedActionDataChecklist);
+    setDataChecklistDefault(updatedDataChecklistDefault);
+    setDataChecklistFaild(updatedDataChecklistFaild);
+
+    // Cập nhật dataChecklistFilterContext nếu cần
+    const data2Map = new Map(
+      updatedDataChecklist.map((item) => [item.ID_Checklist, item])
+    );
     const updatedData1 = dataChecklistFilterContext.map((item) =>
       data2Map.has(item.ID_Checklist) ? data2Map.get(item.ID_Checklist) : item
     );
     setDataChecklistFilterContext(updatedData1);
   };
-
-  // click item checklist
-  const handleItemClick = (value, it, key) => {
-    const updatedDataChecklist = dataChecklistFilter?.map((item, i) => {
-      if (item.ID_Checklist === it.ID_Checklist) {
-        return {
-          ...item,
-          valueCheck: value ? value : null,
-          gioht: moment().format("LTS"),
-        };
-      }
-      return item;
-    });
-
-    handleSetData(key, updatedDataChecklist, it);
-  };
-
-  const handlePushDataFilterQr = async (value) => {
-    const data = {
-      MaQrCode: value,
-    };
-    try {
-      const res = await axios.post(
-        BASE_URL + `/ent_checklist/filter_qr/${ID_KhoiCV}/${ID_ChecklistC}`,
-        data,
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: "Bearer " + authToken,
-          },
-        }
-      );
-      const dataList = res.data.data;
-      let filteredData = dataList.map((item) => {
-        const matchingItem = defaultActionDataChecklist.find((newItem) => {
-          return newItem.ID_Checklist === item.ID_Checklist;
-        });
-        if (matchingItem) {
-          return {
-            ...item,
-            valueCheck: matchingItem.valueCheck,
-            GhichuChitiet: matchingItem.GhichuChitiet,
-            Anh: matchingItem.Anh,
-            gioht: matchingItem.gioht,
-            ID_ChecklistC: ID_ChecklistC,
-          };
-        } else {
-          return {
-            ...item,
-            valueCheck: null,
-            GhichuChitiet: "",
-            Anh: null,
-            gioht: moment().format("LTS"),
-            ID_ChecklistC: ID_ChecklistC,
-          };
-        }
-      });
-
-      const newDataChecklist = filteredData.filter(
-        (item) => item.valueCheck !== null
-      );
-
-      // Thêm các phần tử mới từ newDataChecklist vào newActionDataChecklist
-      setNewActionDataChecklist((prevState) =>
-        prevState?.concat(newDataChecklist)
-      );
-
-      setDataChecklistFilter(filteredData);
-      setOpacity(1);
-      setModalVisibleQr(false);
-      handleCloseModal();
-    } catch (error) {
-      if (error.response) {
-        // Lỗi từ phía server (có response từ server)
-        Alert.alert("PMC Thông báo", error.response.data.message, [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      } else if (error.request) {
-        // Lỗi không nhận được phản hồi từ server
-        Alert.alert("PMC Thông báo", "Không nhận được phản hồi từ máy chủ", [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      } else {
-        // Lỗi khi cấu hình request
-        Alert.alert("PMC Thông báo", "Lỗi khi gửi yêu cầu", [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      }
-    }
-  };
-
-  console.log('location',location)
 
   // call api submit data checklsit
   const handleSubmit = async () => {
@@ -515,7 +486,7 @@ const DetailChecklist = ({ route, navigation }) => {
     } catch (error) {
       // Cập nhật sau khi hoàn thành xử lý API} catch (error) {
       console.error("Lỗi khi kiểm tra kết nối mạng:", error);
-      setLoadingSubmit(false)
+      setLoadingSubmit(false);
     }
   };
 
@@ -532,13 +503,11 @@ const DetailChecklist = ({ route, navigation }) => {
         formData.append("ID_ChecklistC", ID_ChecklistC);
         formData.append("ID_Checklist", item.ID_Checklist);
         formData.append("Ketqua", item.valueCheck || "");
-        formData.append("Gioht", item.gioht);
+        formData.append("Gioht", item.Gioht);
         formData.append("Ghichu", item.GhichuChitiet || "");
         formData.append("Vido", location?.coords?.latitude || "");
         formData.append("Kinhdo", location?.coords?.longitude || "");
         formData.append("Docao", location?.coords?.altitude || "");
-
-        // If there is an image, append it to formData
         if (item.Anh) {
           const file = {
             uri:
@@ -557,7 +526,6 @@ const DetailChecklist = ({ route, navigation }) => {
           // formData.append(`Images_${index}`, {});
         }
       });
-
       // Send the entire FormData in a single request
       await axios
         .post(BASE_URL + `/tb_checklistchitiet/create`, formData, {
@@ -605,24 +573,22 @@ const DetailChecklist = ({ route, navigation }) => {
   // api faild tb_checklistchitietdone
   const handleDefaultActionDataChecklist = async () => {
     // Xử lý API cho defaultActionDataChecklist
-    const descriptions = [
-      defaultActionDataChecklist
-        .map(
-          (item) => `${item.ID_Checklist}/${item.Giatridinhdanh}/${item.gioht}`
-        )
-        .join(","),
-    ];
+    const descriptions = defaultActionDataChecklist
+      .map((item) => item.ID_Checklist)
+      .join(",");
+
     const ID_Checklists = defaultActionDataChecklist.map(
       (item) => item.ID_Checklist
     );
-    const descriptionsJSON = JSON.stringify(descriptions);
+    const Gioht = defaultActionDataChecklist.map((item) => item.Gioht);
 
     const requestDone = axios.post(
       BASE_URL + "/tb_checklistchitietdone/create",
       {
-        Description: descriptionsJSON,
+        Description: descriptions,
         ID_Checklists: ID_Checklists,
         ID_ChecklistC: ID_ChecklistC,
+        Gioht: Gioht[0],
         checklistLength: defaultActionDataChecklist.length,
         Vido: location?.coords?.latitude || "",
         Kinhdo: location?.coords?.longitude || "",
@@ -679,7 +645,7 @@ const DetailChecklist = ({ route, navigation }) => {
         formData.append("ID_ChecklistC", ID_ChecklistC);
         formData.append("ID_Checklist", item.ID_Checklist);
         formData.append("Ketqua", item.valueCheck || "");
-        formData.append("Gioht", item.gioht);
+        formData.append("Gioht", item.Gioht);
         formData.append("Ghichu", item.GhichuChitiet || "");
         formData.append("Vido", location?.coords?.latitude || "");
         formData.append("Kinhdo", location?.coords?.longitude || "");
@@ -700,21 +666,14 @@ const DetailChecklist = ({ route, navigation }) => {
           formData.append(`Images_${index}`, file);
           formData.append("Anh", file.name);
         } else {
-          // formData.append("Anh", "");
-          // formData.append(`Images_${index}`, {});
         }
       });
 
       // Chuẩn bị dữ liệu cho yêu cầu thứ hai
-      const descriptions = [
-        defaultActionDataChecklist
-          .map(
-            (item) =>
-              `${item.ID_Checklist}/${item.Giatridinhdanh}/${item.gioht}`
-          )
-          .join(","),
-      ];
-      const descriptionsJSON = JSON.stringify(descriptions);
+      const descriptions = defaultActionDataChecklist
+        .map((item) => item.ID_Checklist)
+        .join(",");
+
       const ID_Checklists = defaultActionDataChecklist.map(
         (item) => item.ID_Checklist
       );
@@ -734,9 +693,10 @@ const DetailChecklist = ({ route, navigation }) => {
       const requestDone = axios.post(
         `${BASE_URL}/tb_checklistchitietdone/create`,
         {
-          Description: descriptionsJSON,
+          Description: descriptions,
           ID_Checklists: ID_Checklists,
           ID_ChecklistC: ID_ChecklistC,
+          Gioht: defaultActionDataChecklist[0].Gioht,
           checklistLength: defaultActionDataChecklist.length,
           Vido: location?.coords?.latitude || "",
           Kinhdo: location?.coords?.longitude || "",
@@ -838,7 +798,6 @@ const DetailChecklist = ({ route, navigation }) => {
     const dataChecklistFilterContextReset = dataChecklistFilterContext.filter(
       (item) => !idsToRemove.has(item.ID_Checklist)
     );
-
     if (dataChecklistFilter?.length === newActionDataChecklist?.length) {
       const filteredData = hangMuc.filter(
         (item) => item.ID_Hangmuc !== ID_Hangmuc
@@ -851,10 +810,13 @@ const DetailChecklist = ({ route, navigation }) => {
       setHangMuc(filteredData);
       navigation.goBack();
     }
+    const dataChecklist = dataChecklistFilterContextReset?.filter(
+      (item) => item.ID_Hangmuc == ID_Hangmuc
+    );
 
+    setDataChecklistFilter(dataChecklist);
     // Update state with the filtered context
     setDataChecklistFilterContext(dataChecklistFilterContextReset);
-
     // Optionally, reset newActionDataChecklist, defaultActionDataChecklist, and dataChecklistFaild if needed
     setNewActionDataChecklist([]);
     setDataChecklistDefault([]);
@@ -867,12 +829,21 @@ const DetailChecklist = ({ route, navigation }) => {
     setOpacity(1);
   };
 
+  const handleSheetChanges = useCallback((index) => {
+    if (index === -1) {
+      handleCloseModal();
+    } else {
+      setOpacity(0.2);
+    }
+  }, []);
+
   // click dots and show modal bottom sheet
   const handlePopupActive = useCallback((item, index) => {
     setOpacity(0.2);
     setDataItem(item);
     setModalVisible(true);
     setIndex(index);
+    bottomSheetModalRef.current?.present();
   }, []);
 
   const handlePopupActiveTieuChuan = useCallback((item, index) => {
@@ -888,7 +859,17 @@ const DetailChecklist = ({ route, navigation }) => {
     setDataItem(null);
     setModalVisible(false);
     setIndex(null);
+    bottomSheetModalRef.current?.close();
   }, []);
+
+  const handleBackAnroid = async () => {
+    setOpacity(1);
+    setDataItem(null);
+    setModalVisible(false);
+    setIndex(null);
+    bottomSheetModalRef.current?.close();
+    setIsBottomSheetOpen(false);
+  };
 
   // view item flatlist
   const renderItem = (item, index) => {
@@ -920,16 +901,34 @@ const DetailChecklist = ({ route, navigation }) => {
             }}
           >
             {item?.isCheck == 0 && (
-              <ActiveChecklist
-                item={item}
-                index={index}
-                size={adjust(30)}
-                handleToggle={() =>
-                  handleItemClick(item?.Giatridinhdanh, item, "active")
-                }
-                // active={}
-              />
+              <>
+                {item?.valueCheck !== null ? (
+                  <ActiveChecklist
+                    item={item}
+                    index={index}
+                    size={adjust(30)}
+                    handleToggle={() => {
+                      handleItemClear(item?.ID_Checklist);
+                    }}
+                  />
+                ) : (
+                  <ActiveChecklist
+                    item={item}
+                    index={index}
+                    size={adjust(30)}
+                    handleToggle={() =>
+                      handleItemClick(
+                        item?.Giatridinhdanh,
+                        "click",
+                        "valueCheck",
+                        item
+                      )
+                    }
+                  />
+                )}
+              </>
             )}
+
             <View style={{ width: "90%" }}>
               <Text
                 allowFontScaling={false}
@@ -959,7 +958,11 @@ const DetailChecklist = ({ route, navigation }) => {
               <MaterialIcons name="read-more" size={adjust(30)} color="black" />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => handlePopupActive(item, index)}>
+            <TouchableOpacity
+              onPress={() => {
+                handlePopupActive(item, index), setIsBottomSheetOpen(true);
+              }}
+            >
               <Entypo
                 name="dots-three-vertical"
                 size={adjust(30)}
@@ -1007,16 +1010,17 @@ const DetailChecklist = ({ route, navigation }) => {
                       justifyContent: "space-between",
                     }}
                   >
-                    <TouchableOpacity
+                    <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
+                        width: "100%",
                         gap: 8,
                       }}
                     >
                       <View
                         style={{
-                          flexDirection: "cloumn",
+                          flexDirection: "column",
                           gap: 8,
                         }}
                       >
@@ -1024,18 +1028,46 @@ const DetailChecklist = ({ route, navigation }) => {
                           allowFontScaling={false}
                           style={[styles.text, { fontSize: 17 }]}
                         >
-                          Hạng mục: {Hangmuc}
+                          Hạng mục: {Hangmuc?.Hangmuc}
                         </Text>
                         <Text allowFontScaling={false} style={styles.text}>
                           Số lượng: {decimalNumber(dataChecklistFilter?.length)}{" "}
                           Checklist
                         </Text>
-                        <Text allowFontScaling={false} style={styles.text}>
-                          Đang checklist:{" "}
-                          {decimalNumber(newActionDataChecklist?.length)}
-                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            width: "100%",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Text allowFontScaling={false} style={styles.text}>
+                            Đang checklist:{" "}
+                            {decimalNumber(newActionDataChecklist?.length)}
+                          </Text>
+                          {Hangmuc?.FileTieuChuan !== null &&
+                            Hangmuc?.FileTieuChuan !== undefined && (
+                              <View>
+                                <TouchableOpacity
+                                  onPress={() => setShow(true)}
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <Ionicons
+                                    name="bookmark"
+                                    size={24}
+                                    color="white"
+                                  />
+                                  <Text style={styles.text}>Tiêu chuẩn </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                        </View>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
                 <View
@@ -1069,7 +1101,7 @@ const DetailChecklist = ({ route, navigation }) => {
                         style={{
                           margin: 12,
                           flex: 1,
-                          marginBottom: 100,
+                          marginBottom: 80,
                         }}
                         data={dataChecklistFilter}
                         renderItem={({ item, index, separators }) =>
@@ -1132,7 +1164,7 @@ const DetailChecklist = ({ route, navigation }) => {
                 <View
                   style={{
                     position: "absolute",
-                    bottom: 40,
+                    bottom: 15,
                     flexDirection: "row",
                     justifyContent: "space-around",
                     alignItems: "center",
@@ -1150,32 +1182,22 @@ const DetailChecklist = ({ route, navigation }) => {
               </View>
             </ImageBackground>
 
-            {/* Modal show action  */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => {
-                //Alert.alert("Modal has been closed.");
-                setModalVisible(!modalVisible);
-                setOpacity(1)
-              }}
+            <BottomSheetModal
+              ref={bottomSheetModalRef}
+              index={0}
+              snapPoints={snapPoints}
+              onChange={handleSheetChanges}
             >
-              <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                  <Text allowFontScaling={false} style={styles.modalText}>
-                    Thông tin checklist chi tiết
-                  </Text>
-                  <ModalPopupDetailChecklist
-                    handlePopupClear={handlePopupClear}
-                    dataItem={dataItem}
-                    handleItemClick={handleItemClick}
-                    index={index}
-                    handleChange={handleChange}
-                  />
-                </View>
+              <View style={styles.contentContainer}>
+                <ModalPopupDetailChecklist
+                  handlePopupClear={handlePopupClear}
+                  dataItem={dataItem}
+                  handleItemClick={handleItemClick}
+                  index={index}
+                  // handleChange={handleChange}
+                />
               </View>
-            </Modal>
+            </BottomSheetModal>
 
             {/* Modal show tieu chuan  */}
             <Modal
@@ -1186,7 +1208,7 @@ const DetailChecklist = ({ route, navigation }) => {
                 setModalVisibleTieuChuan(!modalVisibleTieuChuan);
               }}
             >
-              <View style={[styles.centeredView]}>
+              <View style={[styles.centeredView, { height: "100%" }]}>
                 <View
                   style={[
                     styles.modalView,
@@ -1194,6 +1216,8 @@ const DetailChecklist = ({ route, navigation }) => {
                       width: "60%",
                       height: "auto",
                       justifyContent: "space-between",
+                      alignItems: "center",
+                      alignContent: "center",
                     },
                   ]}
                 >
@@ -1219,28 +1243,54 @@ const DetailChecklist = ({ route, navigation }) => {
             </Modal>
 
             <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisibleQr}
+              animationType={"slide"}
+              transparent={false}
+              visible={show}
               onRequestClose={() => {
-                setModalVisibleQr(!modalVisibleQr);
-                setOpacity(1);
+                console.log("Modal has been closed.");
               }}
             >
-              <View
-                style={[styles.centeredView, { width: "100%", height: "80%" }]}
-              >
-                <View
-                  style={[styles.modalView, { width: "80%", height: "60%" }]}
-                >
-                  <QRCodeScreen
-                    setModalVisibleQr={setModalVisibleQr}
-                    setOpacity={setOpacity}
-                    handlePushDataFilterQr={handlePushDataFilterQr}
-                    setIsScan={setIsScan}
-                  />
-                </View>
-              </View>
+              <TouchableOpacity onPress={() => setShow(false)}>
+                <Ionicons
+                  name="close"
+                  size={40}
+                  color="black"
+                  style={{
+                    marginTop: 10,
+                    textAlign: "right",
+                    paddingRight: 10,
+                  }}
+                />
+              </TouchableOpacity>
+              {Hangmuc?.FileTieuChuan !== null &&
+                Hangmuc?.FileTieuChuan !== undefined && (
+                  <View style={{ flex: 1 }}>
+                    {loading && (
+                      <ActivityIndicator
+                        size="large"
+                        color="#0000ff"
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          zIndex: 1,
+                        }}
+                      />
+                    )}
+                    <WebView
+                      customStyle={{
+                        readerContainerNavigateArrow: true,
+                        readerContainerNavigate: true,
+                      }}
+                      style={{ flex: 1 }}
+                      source={{
+                        uri: Hangmuc?.FileTieuChuan,
+                      }}
+                      onLoadStart={() => setLoading(true)}
+                      onLoadEnd={() => setLoading(false)}
+                    />
+                  </View>
+                )}
             </Modal>
           </BottomSheetModalProvider>
         </TouchableWithoutFeedback>
@@ -1254,6 +1304,10 @@ export default DetailChecklist;
 const styles = StyleSheet.create({
   container: {
     margin: 12,
+  },
+  contentContainer: {
+    flex: 1,
+    alignItems: "center",
   },
   danhmuc: {
     fontSize: adjust(25),
@@ -1282,7 +1336,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   centeredView: {
-    flex: 1,
+    // flex: 1,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 22,

@@ -25,7 +25,7 @@ export default function ItemCaChecklist({
       onPress={() => toggleTodo(item)}
     >
       <View style={styles.row}>
-        <View style={{ width: 150 }}>
+        <View style={{ width: 120 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
@@ -44,7 +44,7 @@ export default function ItemCaChecklist({
         </Text>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 150 }}>
+        <View style={{ width: 120 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
@@ -65,7 +65,7 @@ export default function ItemCaChecklist({
         </View>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 150 }}>
+        <View style={{ width: 120 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
@@ -80,11 +80,11 @@ export default function ItemCaChecklist({
             { fontWeight: "500", color: isExistIndex ? "black" : "white" },
           ]}
         >
-          : {item?.ent_giamsat?.Hoten}
+          : {item?.ent_user?.Hoten}
         </Text>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 150 }}>
+        <View style={{ width: 120 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
@@ -103,7 +103,26 @@ export default function ItemCaChecklist({
         </Text>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 150 }}>
+        <View style={{ width: 120 }}>
+          <Text
+            allowFontScaling={false}
+            style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
+          >
+            Tên ca
+          </Text>
+        </View>
+        <Text
+          allowFontScaling={false}
+          style={[
+            styles.title,
+            { fontWeight: "500", color: isExistIndex ? "black" : "white" },
+          ]}
+        >
+          : {item?.ent_calv.Tenca}
+        </Text>
+      </View>
+      <View style={styles.row}>
+        <View style={{ width: 120 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}

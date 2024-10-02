@@ -58,10 +58,10 @@ const headerList = [
     til: "Checklist",
     width: 200,
   },
-  {
-    til: "Tên tòa nhà",
-    width: 150,
-  },
+  // {
+  //   til: "Tên tòa nhà",
+  //   width: 150,
+  // },
   {
     til: "Thuộc tầng",
     width: 150,
@@ -96,8 +96,8 @@ const DanhmucTracuu = () => {
   );
   const { user, authToken } = useSelector((state) => state.authReducer);
 
-  const [data, setData] = useState([]);
-  const [dataKhuvuc, setDataKhuvuc] = useState(ent_khuvuc);
+  const [dataTraCuu, setDataTraCuu] = useState([]);
+  const [dataKhuvuc, setDataKhuvuc] = useState([]);
   const [newActionCheckList, setNewActionCheckList] = useState([]);
 
   const bottomSheetModalRef = useRef(null);
@@ -132,21 +132,6 @@ const DanhmucTracuu = () => {
     ID_Tang: null,
   });
 
-  const init_toanha = async () => {
-    await dispath(ent_toanha_get());
-  };
-
-  const init_khuvuc = async () => {
-    await dispath(ent_khuvuc_get());
-  };
-
-  const init_khoicv = async () => {
-    await dispath(ent_khoicv_get());
-  };
-
-  const init_tang = async () => {
-    await dispath(ent_tang_get());
-  };
 
   useEffect(() => {
     setDataKhuvuc(ent_khuvuc);
@@ -174,12 +159,6 @@ const DanhmucTracuu = () => {
     asyncKhuvuc();
   }, [filters.ID_Toanha]);
 
-  useEffect(() => {
-    init_khuvuc();
-    init_toanha();
-    init_khoicv();
-    init_tang();
-  }, []);
 
   const toggleTodo = async (item) => {
     // setIsCheckbox(true);
@@ -236,42 +215,69 @@ const DanhmucTracuu = () => {
         }
       )
       .then((res) => {
-        setData(res.data);
+        setDataTraCuu(res?.data?.data);
         handlePresentModalClose();
         setIsLoading(false);
       })
-      .catch((err) => {
+      .catch((error) => {
         setIsLoading(false);
       });
   };
 
-  const fetchDataExcel = async () => {
-    setIsLoading(true);
-    await axios
-      .post(BASE_URL + `/tb_checklistchitiet/excel-checklist`, data, {
-        headers: {
-          Accept: "application/json",
-          Authorization: "Bearer " + authToken,
-        },
-      })
-      .then(async (res) => {
-        const filePath = res.data.filePath;
-        setIsLoading(false);
-        const supported = await Linking.canOpenURL(filePath);
-
-        if (supported) {
-          await Linking.openURL(filePath);
-        }
-      })
-
-      .catch((err) => {
-        setIsLoading(false);
-      });
-  };
 
   useEffect(() => {
     fetchData(filters);
   }, [page, numberOfItemsPerPage]);
+
+
+  const toggleSwitch = (isEnabled) => {
+    setIsEnabled(!isEnabled);
+    if (isEnabled === false) {
+      setFilters({
+        fromDate: startOfMonth,
+        toDate: endOfMonth,
+        ID_Toanha: null,
+        ID_Khuvuc: null,
+        ID_Tang: null,
+      });
+    }
+  };
+
+  const handleSheetChanges = useCallback((index) => {
+    if (index === -1) {
+      setOpacity(1);
+    } else {
+      setOpacity(0.2);
+    }
+  }, []);
+
+  const handlePresentModalPress = useCallback(() => {
+    bottomSheetModalRef?.current?.present();
+  }, []);
+
+  const handlePresentModalPress2 = useCallback(() => {
+    bottomSheetModalRef2?.current?.present();
+  }, []);
+
+  const handlePresentModalClose = useCallback(() => {
+    setOpacity(1);
+    bottomSheetModalRef?.current?.close();
+  });
+
+  const decimalNumber = (number) => {
+    if (number < 10 && number > 0) return `0${number}`;
+    if (number === 0) return `0`;
+    return number;
+  };
+
+  const handleModalShow = (active, op) => {
+    setModalVisible(active);
+    setOpacity(Number(op));
+  };
+
+  React.useEffect(() => {
+    setPage(0);
+  }, [numberOfItemsPerPage]);
 
   const _renderItem = ({ item, index }) => {
     const isExistIndex = newActionCheckList?.find(
@@ -304,14 +310,14 @@ const DanhmucTracuu = () => {
               {item?.ent_checklist?.Checklist}
             </Text>
           </DataTable.Cell>
-          <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
+          {/* <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
             <Text allowFontScaling={false}
               style={{ color: isExistIndex ? "white" : "black" }}
               numberOfLines={2}
             >
               {item?.ent_checklist?.ent_hangmuc?.ent_khuvuc?.ent_toanha?.Toanha}
             </Text>
-          </DataTable.Cell>
+          </DataTable.Cell> */}
           <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
             <Text allowFontScaling={false}
               style={{ color: isExistIndex ? "white" : "black" }}
@@ -325,7 +331,7 @@ const DanhmucTracuu = () => {
               style={{ color: isExistIndex ? "white" : "black" }}
               numberOfLines={2}
             >
-              {item?.ent_checklist?.ent_hangmuc?.ent_khuvuc?.Tenkhuvuc}
+              {item?.ent_checklist?.ent_khuvuc?.Tenkhuvuc}
             </Text>
           </DataTable.Cell>
           <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
@@ -350,7 +356,7 @@ const DanhmucTracuu = () => {
               style={{ color: isExistIndex ? "white" : "black" }}
               numberOfLines={2}
             >
-              {item?.tb_checklistc?.ent_giamsat?.Hoten}
+              {item?.tb_checklistc?.ent_user?.Hoten}
             </Text>
           </DataTable.Cell>
 
@@ -363,72 +369,10 @@ const DanhmucTracuu = () => {
             </Text>
           </DataTable.Cell>
 
-          {/* <DataTable.Cell style={{ width: 150, justifyContent: "center" }}>
-            <Text allowFontScaling={false}
-              style={{ color: isExistIndex ? "white" : "black" }}
-              numberOfLines={5}
-            >
-              {item?.Ghichu}
-            </Text>
-          </DataTable.Cell> */}
         </DataTable.Row>
       </TouchableHighlight>
     );
   };
-
-  const toggleSwitch = (isEnabled) => {
-    setIsEnabled(!isEnabled);
-    if (isEnabled === false) {
-      setFilters({
-        fromDate: startOfMonth,
-        toDate: endOfMonth,
-        ID_Toanha: null,
-        ID_Khuvuc: null,
-        ID_Tang: null,
-      });
-    }
-  };
-
-  const handleSheetChanges = useCallback((index) => {
-    if (index === -1) {
-      setOpacity(1);
-    } else {
-      setOpacity(0.2);
-    }
-  }, []);
-
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef?.current?.present();
-  }, []);
-
-  const handlePresentModalPress2 = useCallback(() => {
-    bottomSheetModalRef?.current?.present();
-  }, []);
-
-  const handlePresentModalClose = useCallback(() => {
-    setOpacity(1);
-    bottomSheetModalRef?.current?.close();
-  });
-
-  const handlePresentModalClose2 = useCallback(() => {
-    setOpacity(1);
-    bottomSheetModalRef2?.current?.close();
-  });
-
-  const decimalNumber = (number) => {
-    if (number < 10 && number > 0) return `0${number}`;
-    if (number === 0) return `0`;
-    return number;
-  };
-
-  const handleModalShow = (active, op) => {
-    setModalVisible(active);
-    setOpacity(Number(op));
-  };
-
-  React.useEffect(() => {
-    setPage(0);
-  }, [numberOfItemsPerPage]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -464,7 +408,7 @@ const DanhmucTracuu = () => {
                       paddingBottom: 20,
                     }}
                   >
-                    Số lượng: {decimalNumber(data?.data?.length)}
+                    Số lượng: {decimalNumber(dataTraCuu?.length)}
                   </Text>
                   </View>
                   </TouchableWithoutFeedback>
@@ -507,7 +451,7 @@ const DanhmucTracuu = () => {
                         </TouchableOpacity>
                       </View>
 
-                      {data.data && data?.data?.length > 0 ? (
+                      {dataTraCuu && dataTraCuu?.length > 0 ? (
                         <>
                           <ScrollView
                             style={{ flex: 1, marginBottom: 20, marginTop: 20 }}
@@ -560,26 +504,26 @@ const DanhmucTracuu = () => {
                                     })}
                                 </DataTable.Header>
 
-                                {data?.data && data?.data?.length > 0 && (
+                                {dataTraCuu && dataTraCuu?.length > 0 && (
                                   <FlatList
                                     keyExtractor={(item, index) =>
                                       `${item?.ID_ChecklistC}_${index}`
                                     }
                                     scrollEnabled={true}
-                                    data={data?.data}
+                                    data={dataTraCuu}
                                     renderItem={_renderItem}
                                   />
                                 )}
                                 <DataTable.Pagination
                                   style={{ justifyContent: "flex-start", backgroundColor: '#eeeeee' }}
                                   page={page}
-                                  numberOfPages={Math.ceil(data?.totalPages)}
+                                  numberOfPages={Math.ceil(dataTraCuu?.totalPages)}
                                   onPageChange={(page) => {
                                     setPage(page);
                                     // fetchData()
                                   }}
                                   label={`Từ ${page + 1} đến ${
-                                    data?.totalPages
+                                    dataTraCuu?.totalPages
                                   }`}
                                   showFastPaginationControls
                                   numberOfItemsPerPageList={
@@ -713,14 +657,6 @@ const DanhmucTracuu = () => {
                   </>
                 ))}
 
-              {/* {user && user.Permission === 1 && (
-                <TouchableOpacity
-                  style={[styles.button]}
-                  onPress={fetchDataExcel}
-                >
-                  <Feather name="save" size={26} color="white" />
-                </TouchableOpacity>
-              )} */}
             </View>
 
             <Modal
@@ -728,7 +664,6 @@ const DanhmucTracuu = () => {
               transparent={true}
               visible={modalVisible}
               onRequestClose={() => {
-                //Alert.alert("Modal has been closed.");
                 setModalVisible(!modalVisible);
               }}
             >
@@ -791,7 +726,7 @@ const DanhmucTracuu = () => {
                       <Text allowFontScaling={false}  style={styles.textModal}>
                         Người checklist:{" "}
                         {
-                          newActionCheckList[0]?.tb_checklistc?.ent_giamsat
+                          newActionCheckList[0]?.tb_checklistc?.ent_user
                             ?.Hoten
                         }
                       </Text>

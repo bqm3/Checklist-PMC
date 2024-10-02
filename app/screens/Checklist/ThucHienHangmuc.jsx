@@ -25,9 +25,12 @@ import Button from "../../components/Button/Button";
 import QRCodeScreen from "../QRCodeScreen";
 import DataContext from "../../context/DataContext";
 import adjust from "../../adjust";
+import { Camera } from "expo-camera";
+import { Linking } from "react-native";
 
 const ThucHienHangmuc = ({ route, navigation }) => {
-  const { ID_ChecklistC, ID_KhoiCV, ID_Calv, ID_Khuvuc } = route.params;
+  const { ID_ChecklistC, ID_KhoiCV, ID_Khuvuc, dataFilterHandler } =
+    route.params;
   const { dataChecklists, setHangMuc, hangMuc, HangMucDefault } =
     useContext(DataContext);
 
@@ -42,20 +45,38 @@ const ThucHienHangmuc = ({ route, navigation }) => {
   useEffect(() => {
     if (HangMucDefault && dataChecklists) {
       // Lọc các mục có ID_Khuvuc trùng khớp
-      const filteredByKhuvuc = HangMucDefault.filter(
-        (item) => item.ID_Khuvuc === ID_Khuvuc
+      const filteredByKhuvuc = HangMucDefault?.filter(
+        (item) => item.ID_Khuvuc == ID_Khuvuc
       );
 
-      // Lấy danh sách ID_Hangmuc từ dataChecklists
-      const checklistIDs = dataChecklists.map((item) => item.ID_Hangmuc);
+      if (dataFilterHandler.length > 0) {
+        const checklistIDs = dataFilterHandler?.map((item) => item.ID_Hangmuc);
 
-      // Lọc filteredByKhuvuc để chỉ giữ lại các mục có ID_Hangmuc tồn tại trong checklistIDs
-      const finalFilteredData = filteredByKhuvuc.filter((item) =>
-        checklistIDs.includes(item.ID_Hangmuc)
-      );
+        // Lọc filteredByKhuvuc để chỉ giữ lại các mục có ID_Hangmuc tồn tại trong checklistIDs
+        const finalFilteredData = filteredByKhuvuc?.filter((item) =>
+          checklistIDs.includes(item.ID_Hangmuc)
+        );
 
-      // Cập nhật trạng thái hangMuc với danh sách đã lọc
-      setHangMuc(finalFilteredData);
+        if (finalFilteredData.length == 0 && filteredByKhuvuc.length == 0) {
+          navigation.goBack();
+        } else {
+          setHangMuc(finalFilteredData);
+        }
+      } else {
+        // Lấy danh sách ID_Hangmuc từ dataChecklists
+        const checklistIDs = dataChecklists?.map((item) => item.ID_Hangmuc);
+
+        // Lọc filteredByKhuvuc để chỉ giữ lại các mục có ID_Hangmuc tồn tại trong checklistIDs
+        const finalFilteredData = filteredByKhuvuc?.filter((item) =>
+          checklistIDs.includes(item.ID_Hangmuc)
+        );
+
+        if (finalFilteredData.length == 0 && filteredByKhuvuc.length == 0) {
+          navigation.goBack();
+        } else {
+          setHangMuc(finalFilteredData);
+        }
+      }
     }
   }, [ID_Khuvuc, HangMucDefault, dataChecklists]);
 
@@ -72,10 +93,9 @@ const ThucHienHangmuc = ({ route, navigation }) => {
         navigation.navigate("Chi tiết Checklist", {
           ID_ChecklistC: ID_ChecklistC,
           ID_KhoiCV: ID_KhoiCV,
-          ID_Calv: ID_Calv,
           ID_Hangmuc: resData[0].ID_Hangmuc,
           hangMuc: hangMuc,
-          Hangmuc: resData[0].Hangmuc,
+          Hangmuc: resData[0],
         });
         setIsScan(false);
         setModalVisibleQr(false);
@@ -157,11 +177,10 @@ const ThucHienHangmuc = ({ route, navigation }) => {
     navigation.navigate("Chi tiết Checklist", {
       ID_ChecklistC: ID_ChecklistC,
       ID_KhoiCV: ID_KhoiCV,
-      ID_Calv: ID_Calv,
       ID_Hangmuc: dataSelect[0].ID_Hangmuc,
       hangMuc: hangMuc,
       ID_Khuvuc: ID_Khuvuc,
-      Hangmuc: dataSelect[0].Hangmuc,
+      Hangmuc: dataSelect[0],
     });
     setDataSelect([]);
     // Set the non-serializable values immediately after navigation
@@ -228,6 +247,37 @@ const ThucHienHangmuc = ({ route, navigation }) => {
     return number;
   };
 
+  const handleOpenQrCode = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    if (status === "granted") {
+      setModalVisibleQr(true);
+      setOpacity(0.2);
+    } else if (status === "denied") {
+      Alert.alert(
+        "Permission Required",
+        "Camera access is required to take photos. Please enable it in settings.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => {
+              setModalVisibleQr(false);
+              setOpacity(1);
+            },
+          },
+          {
+            text: "Open Settings",
+            onPress: () => Linking.openSettings(),
+          },
+        ],
+        { cancelable: false }
+      );
+    } else {
+      setModalVisibleQr(false);
+      setOpacity(1);
+    }
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -278,29 +328,29 @@ const ThucHienHangmuc = ({ route, navigation }) => {
                   </View>
                 </View>
 
-                {isLoadingDetail === false &&
-                  hangMuc &&
-                  hangMuc?.length > 0 && (
-                    <>
-                      <FlatList
-                        style={{
-                          margin: 12,
-                          flex: 1,
-                          marginBottom: 100,
-                        }}
-                        data={hangMuc}
-                        renderItem={({ item, index, separators }) =>
-                          renderItem(item, index)
-                        }
-                        ItemSeparatorComponent={() => (
-                          <View style={{ height: 16 }} />
-                        )}
-                        keyExtractor={(item, index) =>
-                          `${item?.ID_Checklist}_${index}`
-                        }
-                      />
-                    </>
-                  )}
+                {isLoadingDetail === false && hangMuc && hangMuc?.length > 0 ? (
+                  <>
+                    <FlatList
+                      style={{
+                        margin: 12,
+                        flex: 1,
+                        marginBottom: 100,
+                      }}
+                      data={hangMuc}
+                      renderItem={({ item, index, separators }) =>
+                        renderItem(item, index)
+                      }
+                      ItemSeparatorComponent={() => (
+                        <View style={{ height: 16 }} />
+                      )}
+                      keyExtractor={(item, index) =>
+                        `${item?.ID_Checklist}_${index}`
+                      }
+                    />
+                  </>
+                ) : (
+                  navigation.goBack()
+                )}
 
                 {isLoadingDetail === true && hangMuc?.length == 0 && (
                   <View
@@ -359,10 +409,7 @@ const ThucHienHangmuc = ({ route, navigation }) => {
                       text={"Scan QR Code"}
                       backgroundColor={"white"}
                       color={"black"}
-                      onPress={() => {
-                        setModalVisibleQr(true);
-                        setOpacity(0.2);
-                      }}
+                      onPress={() => handleOpenQrCode()}
                     />
                   )}
 

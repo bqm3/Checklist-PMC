@@ -26,7 +26,7 @@ export const tb_checklistc_get = (pag) => {
             console.error("initialized error");
           }
         } catch (error) {
-          console.log("errd", error.response.data.message);
+          console.log("errd tbChecklistc", error.response.data.message);
         }
       };
 };
@@ -51,7 +51,7 @@ export const tb_checklist_get_lai = (id) => {
               GhichuChitiet: "",
               ID_ChecklistC: ID_ChecklistC,
               Anh: null,
-              gioht: moment().format("LTS"),
+              Gioht: moment().format("LTS"),
             };
           });
           dispatch({
@@ -70,3 +70,29 @@ export const tb_checklist_get_lai = (id) => {
     };
 };
 
+export const tb_sucongoai_get = () => {
+  return async (dispatch) => {
+      try {
+        const token = await AsyncStorage.getItem("tokenUser");
+     if (token !== null) {
+          const response = await axios.get(BASE_URL + `/tb_sucongoai`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: "Bearer " + token,
+            },
+          });
+          const data = response.data;
+          dispatch({
+            type: type.SET_TB_SUCONGOAI_SUCCESS,
+            payload: {
+              tb_sucongoai: data.data,
+            },
+          });
+        } else {
+          console.error("initialized error");
+        }
+      } catch (error) {
+        console.log("err tb_sucongoai_get", error.response.data.message);
+      }
+    };
+};

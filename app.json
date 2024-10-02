@@ -2,7 +2,7 @@
   "expo": {
     "name": "Checklist PMC",
     "slug": "checklist-pmc",
-    "version": "1.0.2",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -10,15 +10,13 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "notification": {
       "icon": "./assets/icon.png",
       "color": "#ffffff",
       "iosDisplayInForeground": true,
       "androidMode": "default"
     },
+    "assetBundlePatterns": ["**/*"],
     "userInterfaceStyle": "automatic",
     "android": {
       "adaptiveIcon": {
@@ -27,12 +25,14 @@
       },
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,
-      "package": "com.pmc.PMCCHECKLIST",
+      "package": "com.anonymous.PMCCHECKLISTAPP",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.LOCATION"
       ],
       "runtimeVersion": {
         "policy": "appVersion"
@@ -47,13 +47,13 @@
         "resizeMode": "contain",
         "backgroundColor": "#ffffff"
       },
-      "buildNumber": "1",
-      "bundleIdentifier": "com.pmc.PMCCHECKLIST", 
+      "buildNumber": "7",
+      "bundleIdentifier": "com.anonymous.PMCCHECKLISTAPP",
       "runtimeVersion": {
         "policy": "sdkVersion"
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "The app needs access to your camera so you can take and upload profile pictures or scan QR codes.",
+        "NSCameraUsageDescription": "The app needs access to your camera to capture images during the checklist process, document areas with incidents, and scan QR codes for asset verification.",
         "NSMicrophoneUsageDescription": "The app needs access to your microphone so you can record and upload audio recordings.",
         "NSLocationWhenInUseUsageDescription": "The app needs access to your location to provide suggestions about nearby places and improve your experience."
       }
@@ -93,6 +93,14 @@
         {
           "icon": "./assets/icon.png",
           "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ],
