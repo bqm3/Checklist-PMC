@@ -25,7 +25,7 @@ import React, {
   useContext,
 } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
-import {
+import BottomSheet, {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetModalProvider,
@@ -41,7 +41,6 @@ import ModalPopupDetailChecklist from "../../components/Modal/ModalPopupDetailCh
 import moment from "moment";
 import axios, { isCancel } from "axios";
 import { BASE_URL } from "../../constants/config";
-import QRCodeScreen from "../QRCodeScreen";
 import DataContext from "../../context/DataContext";
 import ChecklistContext from "../../context/ChecklistContext";
 import * as Network from "expo-network";
@@ -50,6 +49,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "../../components/Active/Checkbox";
 import ConnectContext from "../../context/ConnectContext";
 import WebView from "react-native-webview";
+import { useHeaderHeight } from "@react-navigation/elements";
 import axiosClient from "../../api/axiosClient";
 
 const DetailChecklist = ({ route, navigation }) => {
@@ -64,7 +64,6 @@ const DetailChecklist = ({ route, navigation }) => {
   const {
     dataChecklistFilterContext,
     setDataChecklistFilterContext,
-    setLocationContext,
   } = useContext(ChecklistContext);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -90,11 +89,12 @@ const DetailChecklist = ({ route, navigation }) => {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const headerHeight = useHeaderHeight();
+
   useEffect(() => {
     (async () => {
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
-      setLocationContext(location);
     })();
   }, [dataChecklistFaild, defaultActionDataChecklist]);
 
@@ -213,9 +213,20 @@ const DetailChecklist = ({ route, navigation }) => {
           item.Anh === null
       );
 
+      const DetaildataChecklistFaild = dataChecklistFaild?.map((item) => {
+        if (item.valueCheck == null) {
+          return {
+            ...item,
+            valueCheck: item.Giatridinhdanh,
+          };
+        }
+        return item;
+      });
+
       setDataChecklistFilter(updateDataChecklist);
       setNewActionDataChecklist(dataChecklistAction);
       setDataChecklistDefault(dataChecklistDefault);
+      setDataChecklistFaild(DetaildataChecklistFaild);
 
       const data2Map = new Map(
         updateDataChecklist.map((item) => [item.ID_Checklist, item])
@@ -248,6 +259,7 @@ const DetailChecklist = ({ route, navigation }) => {
 
       setDataChecklistFilter(revertDataChecklist);
       setDataChecklistDefault([]);
+
       const data2Map = new Map(
         revertDataChecklist.map((item) => [item.ID_Checklist, item])
       );
@@ -324,12 +336,17 @@ const DetailChecklist = ({ route, navigation }) => {
     });
 
     if (it.valueCheck === null) {
-      if (
-        !mergedArrOption.some(
-          (existingItem) => existingItem.ID_Checklist === it.ID_Checklist
-        )
-      ) {
+      const existingItem = mergedArrOption.find(
+        (item) => item.ID_Checklist === it.ID_Checklist
+      );
+
+      if (!existingItem) {
         mergedArrOption.push(it);
+      } else {
+        if (JSON.stringify(existingItem) !== JSON.stringify(it)) {
+          const index = mergedArrOption.indexOf(existingItem);
+          mergedArrOption[index] = it;
+        }
       }
     } else {
       if (status === "click") {
@@ -436,124 +453,200 @@ const DetailChecklist = ({ route, navigation }) => {
     try {
       const networkState = await Network.getNetworkStateAsync();
       setIsConnected(networkState.isConnected);
-
-      if (networkState.isConnected) {
-        setLoadingSubmit(true);
-        setActiveAll(false);
-        saveConnect(false);
-
-        if (
-          defaultActionDataChecklist.length === 0 &&
-          dataChecklistFaild.length === 0
-        ) {
-          // Hiển thị thông báo cho người dùng
-          Alert.alert("PMC Thông báo", "Không có checklist để kiểm tra!", [
-            { text: "OK", onPress: () => console.log("OK Pressed") },
-          ]);
-          setLoadingSubmit(false);
-          // Kết thúc hàm sớm nếu mảng rỗng
-          return;
-        }
-        // Kiểm tra dữ liệu và xử lý tùy thuộc vào trạng thái của `defaultActionDataChecklist` và `dataChecklistFaild`
-        if (
-          defaultActionDataChecklist.length === 0 &&
-          dataChecklistFaild.length > 0
-        ) {
-          // Xử lý API cho dataChecklistFaild
-          await handleDataChecklistFaild();
-        } else if (
-          defaultActionDataChecklist.length > 0 &&
-          dataChecklistFaild.length == 0
-        ) {
-          // Xử lý API cho defaultActionDataChecklist
-          await handleDefaultActionDataChecklist();
-        }
-
-        if (
-          defaultActionDataChecklist.length > 0 &&
-          dataChecklistFaild.length > 0
-        ) {
-          await hadlChecklistAll();
-        }
-      } else {
-        await AsyncStorage.setItem("checkNetwork", "1");
+      saveConnect(true);
+  
+      if (location == null) {
         Alert.alert(
-          "Không có kết nối mạng",
-          "Vui lòng kiểm tra kết nối mạng của bạn."
+          "PMC Thông báo",
+          "Vui lòng đợi để xác định vị trí. Hãy xác thực lại trong vòng 1-2 giây!",
+          [{ text: "OK", onPress: () => setLoadingSubmit(false) }]
         );
-        saveConnect(true);
+        return;
+      } else {
+        if (networkState.isConnected) {
+          setLoadingSubmit(true);
+          setActiveAll(false);
+          saveConnect(false);
+  
+          if (
+            defaultActionDataChecklist.length === 0 &&
+            dataChecklistFaild.length === 0
+          ) {
+            Alert.alert("PMC Thông báo", "Không có checklist để kiểm tra!", [
+              { text: "OK", onPress: () => console.log("OK Pressed") },
+            ]);
+            setLoadingSubmit(false);
+            return;
+          }
+  
+          if (
+            defaultActionDataChecklist.length === 0 &&
+            dataChecklistFaild.length > 0
+          ) {
+            const newDataChecklistFaild = dataChecklistFaild.map((item) => {
+              return {
+                ...item,
+                Vido: location?.coords?.latitude || "",
+                Kinhdo: location?.coords?.longitude || "",
+                Docao: location?.coords?.altitude || "",
+              };
+            });
+            await handleDataChecklistFaild(newDataChecklistFaild);
+          } else if (
+            defaultActionDataChecklist.length > 0 &&
+            dataChecklistFaild.length == 0
+          ) {
+            const newDataChecklistDefault = defaultActionDataChecklist.map((item) => {
+              return {
+                ...item,
+                Vido: location?.coords?.latitude || "",
+                Kinhdo: location?.coords?.longitude || "",
+                Docao: location?.coords?.altitude || "",
+              };
+            });
+            await handleDefaultActionDataChecklist(newDataChecklistDefault);
+          }
+  
+          if (
+            defaultActionDataChecklist.length > 0 &&
+            dataChecklistFaild.length > 0
+          ) {
+            const newDataChecklistDefault = defaultActionDataChecklist.map((item) => {
+              return {
+                ...item,
+                Vido: location?.coords?.latitude || "",
+                Kinhdo: location?.coords?.longitude || "",
+                Docao: location?.coords?.altitude || "",
+              };
+            });
+            const newDataChecklistFaild = dataChecklistFaild.map((item) => {
+              return {
+                ...item,
+                Vido: location?.coords?.latitude || "",
+                Kinhdo: location?.coords?.longitude || "",
+                Docao: location?.coords?.altitude || "",
+              };
+            });
+            await handleChecklistAll(newDataChecklistDefault, newDataChecklistFaild);
+          }
+  
+        } else {
+          // Mất kết nối mạng
+          await AsyncStorage.setItem("checkNetwork", "1");
+          Alert.alert(
+            "Không có kết nối mạng",
+            "Vui lòng kiểm tra kết nối mạng của bạn."
+          );
+          saveConnect(true);
+  
+          // Kết hợp dữ liệu từ newDataChecklistDefault và newDataChecklistFaild
+          const combinedData = [...defaultActionDataChecklist, ...dataChecklistFaild];
+  
+          // Cập nhật location cho dataChecklistFilterContext
+          const updateLocation = combinedData.map((item) => {
+            return {
+              ...item,
+              Vido: location?.coords?.latitude || "",
+              Kinhdo: location?.coords?.longitude || "",
+              Docao: location?.coords?.altitude || "",
+            };
+          });
+  
+          // Tạo map từ updateLocation với ID_Checklist làm key
+          const data2Map = new Map(
+            updateLocation.map((item) => [item.ID_Checklist, item])
+          );
+  
+          // Cập nhật dataChecklistFilterContext với các item có cùng ID_Checklist
+          const updatedData1 = dataChecklistFilterContext.map((item) =>
+            data2Map.has(item.ID_Checklist)
+              ? { ...data2Map.get(item.ID_Checklist), ...item }
+              : item
+          );
+  
+          // Lưu lại kết quả cập nhật
+          setDataChecklistFilterContext(updatedData1);
+        }
       }
     } catch (error) {
-      // Cập nhật sau khi hoàn thành xử lý API} catch (error) {
       console.error("Lỗi khi kiểm tra kết nối mạng:", error);
       setLoadingSubmit(false);
     }
   };
+  
 
   // api faild tb_checklistchitiet
-  const handleDataChecklistFaild = async () => {
+  const handleDataChecklistFaild = async (arrData) => {
     try {
       setLoadingSubmit(true);
       // Create a new FormData instance
       const formData = new FormData();
+      const isCheckValueCheck = arrData.some(
+        (item) => item.valueCheck == null || item.valueCheck == ""
+      );
 
-      // Iterate over all items in dataChecklistFaild
-      dataChecklistFaild.forEach((item, index) => {
-        // Extract and append checklist details to formData
-        formData.append("ID_ChecklistC", ID_ChecklistC);
-        formData.append("ID_Checklist", item.ID_Checklist);
-        formData.append("Ketqua", item.valueCheck || "");
-        formData.append("Gioht", item.Gioht);
-        formData.append("Ghichu", item.GhichuChitiet || "");
-        formData.append("Vido", location?.coords?.latitude || "");
-        formData.append("Kinhdo", location?.coords?.longitude || "");
-        formData.append("Docao", location?.coords?.altitude || "");
-        if (item.Anh) {
-          const file = {
-            uri:
-              Platform.OS === "android"
-                ? item.Anh.uri
-                : item.Anh.uri.replace("file://", ""),
-            name:
-              item.Anh.fileName ||
-              `${Math.floor(Math.random() * 999999999)}.jpg`,
-            type: "image/jpeg",
-          };
-          formData.append(`Images_${index}`, file);
-          formData.append("Anh", file.name);
-        } else {
-          // formData.append("Anh", "");
-          // formData.append(`Images_${index}`, {});
-        }
-      });
-      // Send the entire FormData in a single request
-      await axios
-        .post(BASE_URL + `/tb_checklistchitiet/create`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${authToken}`,
-          },
-        })
-        .then((res) => {
-          postHandleSubmit();
-          setLoadingSubmit(false);
-          Alert.alert("PMC Thông báo", "Checklist thành công", [
-            {
-              text: "Hủy",
-              onPress: () => console.log("Cancel Pressed"),
-              style: "cancel",
-            },
-            { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-          ]);
-        })
-        .catch((err) => {
-          setLoadingSubmit(false);
-          Alert.alert(
-            "PMC Thông báo",
-            "Checklist thất bại. Vui lòng kiểm tra lại hình ảnh hoặc ghi chú!!!",
-            [{ text: "Xác nhận", onPress: () => console.log("OK Pressed") }]
-          );
+      if (isCheckValueCheck) {
+        setLoadingSubmit(false);
+        Alert.alert("PMC Thông báo", "Chưa có dữ liệu checklist", [
+          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+        ]);
+      } else {
+        // Iterate over all items in dataChecklistFaild
+        arrData.forEach((item, index) => {
+          // Extract and append checklist details to formData
+          formData.append("ID_ChecklistC", ID_ChecklistC);
+          formData.append("ID_Checklist", item.ID_Checklist);
+          formData.append("Ketqua", item.valueCheck || "");
+          formData.append("Gioht", item.Gioht);
+          formData.append("Ghichu", item.GhichuChitiet || "");
+          formData.append("Vido", item.Vido || "");
+          formData.append("Kinhdo", item.Kinhdo || "");
+          formData.append("Docao", item.Docao || "");
+          if (item.Anh) {
+            const file = {
+              uri:
+                Platform.OS === "android"
+                  ? item.Anh.uri
+                  : item.Anh.uri.replace("file://", ""),
+              name:
+                item.Anh.fileName ||
+                `${Math.floor(Math.random() * 999999999)}.jpg`,
+              type: "image/jpeg",
+            };
+            formData.append(`Images_${index}`, file);
+            formData.append("Anh", file.name);
+          }
         });
+
+        // Send the entire FormData in a single request
+        await axios
+          .post(BASE_URL + `/tb_checklistchitiet/create`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${authToken}`,
+            },
+          })
+          .then((res) => {
+            postHandleSubmit();
+            setLoadingSubmit(false);
+            Alert.alert("PMC Thông báo", "Checklist thành công", [
+              {
+                text: "Hủy",
+                onPress: () => console.log("Cancel Pressed"),
+                style: "cancel",
+              },
+              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+            ]);
+          })
+          .catch((err) => {
+            setLoadingSubmit(false);
+            Alert.alert(
+              "PMC Thông báo",
+              "Checklist thất bại. Vui lòng kiểm tra lại hình ảnh hoặc ghi chú!!!",
+              [{ text: "Xác nhận", onPress: () => console.log("OK Pressed") }]
+            );
+          });
+      }
     } catch (error) {
       setLoadingSubmit(false);
       if (error.response) {
@@ -571,16 +664,16 @@ const DetailChecklist = ({ route, navigation }) => {
   };
 
   // api faild tb_checklistchitietdone
-  const handleDefaultActionDataChecklist = async () => {
+  const handleDefaultActionDataChecklist = async (arrData) => {
     // Xử lý API cho defaultActionDataChecklist
-    const descriptions = defaultActionDataChecklist
+    const descriptions = arrData
       .map((item) => item.ID_Checklist)
       .join(",");
 
-    const ID_Checklists = defaultActionDataChecklist.map(
+    const ID_Checklists = arrData.map(
       (item) => item.ID_Checklist
     );
-    const Gioht = defaultActionDataChecklist.map((item) => item.Gioht);
+    const Gioht = arrData.map((item) => item.Gioht);
 
     const requestDone = axios.post(
       BASE_URL + "/tb_checklistchitietdone/create",
@@ -589,7 +682,7 @@ const DetailChecklist = ({ route, navigation }) => {
         ID_Checklists: ID_Checklists,
         ID_ChecklistC: ID_ChecklistC,
         Gioht: Gioht[0],
-        checklistLength: defaultActionDataChecklist.length,
+        checklistLength: arrData.length,
         Vido: location?.coords?.latitude || "",
         Kinhdo: location?.coords?.longitude || "",
         Docao: location?.coords?.altitude || "",
@@ -634,142 +727,158 @@ const DetailChecklist = ({ route, navigation }) => {
   };
 
   // api all
-  const hadlChecklistAll = async () => {
+  const handleChecklistAll = async (dataDefault, dataFaild) => {
     try {
       setLoadingSubmit(true);
       // Tạo một đối tượng FormData để chứa dữ liệu của dataChecklistFaild
       const formData = new FormData();
-
-      // Lặp qua từng phần tử trong dataChecklistFaild để thêm vào FormData
-      dataChecklistFaild.forEach((item, index) => {
-        formData.append("ID_ChecklistC", ID_ChecklistC);
-        formData.append("ID_Checklist", item.ID_Checklist);
-        formData.append("Ketqua", item.valueCheck || "");
-        formData.append("Gioht", item.Gioht);
-        formData.append("Ghichu", item.GhichuChitiet || "");
-        formData.append("Vido", location?.coords?.latitude || "");
-        formData.append("Kinhdo", location?.coords?.longitude || "");
-        formData.append("Docao", location?.coords?.altitude || "");
-
-        // Nếu có hình ảnh, thêm vào FormData
-        if (item.Anh) {
-          const file = {
-            uri:
-              Platform.OS === "android"
-                ? item.Anh.uri
-                : item.Anh.uri.replace("file://", ""),
-            name:
-              item.Anh.fileName ||
-              `${Math.floor(Math.random() * 999999999)}.jpg`,
-            type: "image/jpeg",
-          };
-          formData.append(`Images_${index}`, file);
-          formData.append("Anh", file.name);
-        } else {
-        }
-      });
-
-      // Chuẩn bị dữ liệu cho yêu cầu thứ hai
-      const descriptions = defaultActionDataChecklist
-        .map((item) => item.ID_Checklist)
-        .join(",");
-
-      const ID_Checklists = defaultActionDataChecklist.map(
-        (item) => item.ID_Checklist
+      const isCheckValueCheck = dataFaild.some(
+        (item) => item.valueCheck == null || item.valueCheck == ""
       );
 
-      // Tạo các yêu cầu API
-      const requestFaild = axios.post(
-        `${BASE_URL}/tb_checklistchitiet/create`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+      if (isCheckValueCheck) {
+        setLoadingSubmit(false);
+        Alert.alert("PMC Thông báo", "Chưa có dữ liệu checklist", [
+          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+        ]);
+      } else {
+        // Lặp qua từng phần tử trong dataChecklistFaild để thêm vào FormData
+        dataFaild.forEach((item, index) => {
+          formData.append("ID_ChecklistC", ID_ChecklistC);
+          formData.append("ID_Checklist", item.ID_Checklist);
+          formData.append("Ketqua", item.valueCheck || "");
+          formData.append("Gioht", item.Gioht);
+          formData.append("Ghichu", item.GhichuChitiet || "");
+          formData.append("Vido", item.Vido || "");
+          formData.append("Kinhdo", item.Kinhdo || "");
+          formData.append("Docao", item.Docao || "");
 
-      const requestDone = axios.post(
-        `${BASE_URL}/tb_checklistchitietdone/create`,
-        {
-          Description: descriptions,
-          ID_Checklists: ID_Checklists,
-          ID_ChecklistC: ID_ChecklistC,
-          Gioht: defaultActionDataChecklist[0].Gioht,
-          checklistLength: defaultActionDataChecklist.length,
-          Vido: location?.coords?.latitude || "",
-          Kinhdo: location?.coords?.longitude || "",
-          Docao: location?.coords?.altitude || "",
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-      // Gọi cả hai API cùng lúc
-      axios
-        .all([requestFaild, requestDone])
-        .then(
-          axios.spread((faildResponse, doneResponse) => {
-            postHandleSubmit();
-            setLoadingSubmit(false);
-
-            // Hiển thị thông báo thành công
-            Alert.alert("PMC Thông báo", "Checklist thành công", [
-              {
-                text: "Hủy",
-                onPress: () => console.log("Cancel Pressed"),
-                style: "cancel",
-              },
-              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-            ]);
-          })
-        )
-        .catch((error) => {
-          setLoadingSubmit(false);
-
-          if (error.response) {
-            // Xử lý lỗi từ server
-            Alert.alert("PMC Thông báo", error.response.data.message, [
-              {
-                text: "Hủy",
-                onPress: () => console.log("Cancel Pressed"),
-                style: "cancel",
-              },
-              { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-            ]);
-          } else if (error.request) {
-            // Xử lý lỗi yêu cầu (không nhận được phản hồi từ server)
-            Alert.alert(
-              "PMC Thông báo",
-              "Network error. Please try again later.",
-              [
-                {
-                  text: "Hủy",
-                  onPress: () => console.log("Cancel Pressed"),
-                  style: "cancel",
-                },
-                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-              ]
-            );
+          // Nếu có hình ảnh, thêm vào FormData
+          if (item.Anh) {
+            const file = {
+              uri:
+                Platform.OS === "android"
+                  ? item.Anh.uri
+                  : item.Anh.uri.replace("file://", ""),
+              name:
+                item.Anh.fileName ||
+                `${Math.floor(Math.random() * 999999999)}.jpg`,
+              type: "image/jpeg",
+            };
+            formData.append(`Images_${index}`, file);
+            formData.append("Anh", file.name);
           } else {
-            Alert.alert(
-              "PMC Thông báo",
-              "An error occurred. Please try again later.",
-              [
-                {
-                  text: "Hủy",
-                  onPress: () => console.log("Cancel Pressed"),
-                  style: "cancel",
-                },
-                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-              ]
-            );
           }
         });
+
+        // Chuẩn bị dữ liệu cho yêu cầu thứ hai
+        const descriptions = dataDefault
+          .map((item) => item.ID_Checklist)
+          .join(",");
+
+        const ID_Checklists = dataDefault.map(
+          (item) => item.ID_Checklist
+        );
+
+        // Tạo các yêu cầu API
+        const requestFaild = axios.post(
+          `${BASE_URL}/tb_checklistchitiet/create`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        const requestDone = axios.post(
+          `${BASE_URL}/tb_checklistchitietdone/create`,
+          {
+            Description: descriptions,
+            ID_Checklists: ID_Checklists,
+            ID_ChecklistC: ID_ChecklistC,
+            Gioht: dataDefault[0].Gioht,
+            checklistLength: dataDefault.length,
+            Vido: dataDefault[0].Vido || "",
+            Kinhdo: dataDefault[0].Kinhdo || "",
+            Docao: dataDefault[0].Docao || "",
+          },
+          {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+        // Gọi cả hai API cùng lúc
+        axios
+          .all([requestFaild, requestDone])
+          .then(
+            axios.spread((faildResponse, doneResponse) => {
+              postHandleSubmit();
+              setLoadingSubmit(false);
+
+              // Hiển thị thông báo thành công
+              Alert.alert("PMC Thông báo", "Checklist thành công", [
+                {
+                  text: "Hủy",
+                  onPress: () => console.log("Cancel Pressed"),
+                  style: "cancel",
+                },
+                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+              ]);
+            })
+          )
+          .catch((error) => {
+            setLoadingSubmit(false);
+
+            if (error.response) {
+              // Xử lý lỗi từ server
+              Alert.alert("PMC Thông báo", error.response.data.message, [
+                {
+                  text: "Hủy",
+                  onPress: () => console.log("Cancel Pressed"),
+                  style: "cancel",
+                },
+                { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+              ]);
+            } else if (error.request) {
+              // Xử lý lỗi yêu cầu (không nhận được phản hồi từ server)
+              Alert.alert(
+                "PMC Thông báo",
+                "Network error. Please try again later.",
+                [
+                  {
+                    text: "Hủy",
+                    onPress: () => console.log("Cancel Pressed"),
+                    style: "cancel",
+                  },
+                  {
+                    text: "Xác nhận",
+                    onPress: () => console.log("OK Pressed"),
+                  },
+                ]
+              );
+            } else {
+              Alert.alert(
+                "PMC Thông báo",
+                "An error occurred. Please try again later.",
+                [
+                  {
+                    text: "Hủy",
+                    onPress: () => console.log("Cancel Pressed"),
+                    style: "cancel",
+                  },
+                  {
+                    text: "Xác nhận",
+                    onPress: () => console.log("OK Pressed"),
+                  },
+                ]
+              );
+            }
+          });
+      }
     } catch (error) {
       setLoadingSubmit(false);
       Alert.alert(
@@ -815,9 +924,7 @@ const DetailChecklist = ({ route, navigation }) => {
     );
 
     setDataChecklistFilter(dataChecklist);
-    // Update state with the filtered context
     setDataChecklistFilterContext(dataChecklistFilterContextReset);
-    // Optionally, reset newActionDataChecklist, defaultActionDataChecklist, and dataChecklistFaild if needed
     setNewActionDataChecklist([]);
     setDataChecklistDefault([]);
     setDataChecklistFaild([]);
@@ -843,7 +950,7 @@ const DetailChecklist = ({ route, navigation }) => {
     setDataItem(item);
     setModalVisible(true);
     setIndex(index);
-    bottomSheetModalRef.current?.present();
+    bottomSheetModalRef?.current?.present();
   }, []);
 
   const handlePopupActiveTieuChuan = useCallback((item, index) => {
@@ -859,7 +966,7 @@ const DetailChecklist = ({ route, navigation }) => {
     setDataItem(null);
     setModalVisible(false);
     setIndex(null);
-    bottomSheetModalRef.current?.close();
+    bottomSheetModalRef?.current?.close();
   }, []);
 
   const handleBackAnroid = async () => {
@@ -867,7 +974,7 @@ const DetailChecklist = ({ route, navigation }) => {
     setDataItem(null);
     setModalVisible(false);
     setIndex(null);
-    bottomSheetModalRef.current?.close();
+    bottomSheetModalRef?.current?.close();
     setIsBottomSheetOpen(false);
   };
 
@@ -985,315 +1092,312 @@ const DetailChecklist = ({ route, navigation }) => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
+        keyboardVerticalOffset={headerHeight}
         behavior={Platform.OS === "ios" ? "padding" : null}
         style={{ flex: 1 }}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <BottomSheetModalProvider>
-            <ImageBackground
-              source={require("../../../assets/bg.png")}
-              resizeMode="cover"
-              style={{ flex: 1 }}
+        <BottomSheetModalProvider>
+          <ImageBackground
+            source={require("../../../assets/bg.png")}
+            resizeMode="cover"
+            style={{ flex: 1 }}
+          >
+            <View
+              style={{
+                flex: 1,
+                opacity: opacity,
+              }}
             >
-              <View
-                style={{
-                  flex: 1,
-                  opacity: opacity,
-                }}
-              >
-                <View style={{ margin: 12 }}>
+              <View style={{ margin: 12 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignContent: "center",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <View
                     style={{
                       flexDirection: "row",
-                      alignContent: "center",
                       alignItems: "center",
-                      justifyContent: "space-between",
+                      width: "100%",
+                      gap: 8,
                     }}
                   >
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        width: "100%",
+                        flexDirection: "column",
                         gap: 8,
                       }}
                     >
+                      <Text
+                        allowFontScaling={false}
+                        style={[styles.text, { fontSize: 17 }]}
+                      >
+                        Hạng mục: {Hangmuc?.Hangmuc}
+                      </Text>
+                      <Text allowFontScaling={false} style={styles.text}>
+                        Số lượng: {decimalNumber(dataChecklistFilter?.length)}{" "}
+                        Checklist
+                      </Text>
                       <View
                         style={{
-                          flexDirection: "column",
-                          gap: 8,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          width: "100%",
+                          justifyContent: "space-between",
                         }}
                       >
-                        <Text
-                          allowFontScaling={false}
-                          style={[styles.text, { fontSize: 17 }]}
-                        >
-                          Hạng mục: {Hangmuc?.Hangmuc}
-                        </Text>
                         <Text allowFontScaling={false} style={styles.text}>
-                          Số lượng: {decimalNumber(dataChecklistFilter?.length)}{" "}
-                          Checklist
+                          Đang checklist:{" "}
+                          {decimalNumber(newActionDataChecklist?.length)}
                         </Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            width: "100%",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <Text allowFontScaling={false} style={styles.text}>
-                            Đang checklist:{" "}
-                            {decimalNumber(newActionDataChecklist?.length)}
-                          </Text>
-                          {Hangmuc?.FileTieuChuan !== null &&
-                            Hangmuc?.FileTieuChuan !== undefined && (
-                              <View>
-                                <TouchableOpacity
-                                  onPress={() => setShow(true)}
-                                  style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <Ionicons
-                                    name="bookmark"
-                                    size={24}
-                                    color="white"
-                                  />
-                                  <Text style={styles.text}>Tiêu chuẩn </Text>
-                                </TouchableOpacity>
-                              </View>
-                            )}
-                        </View>
+                        {Hangmuc?.FileTieuChuan !== null &&
+                          Hangmuc?.FileTieuChuan !== undefined && (
+                            <View>
+                              <TouchableOpacity
+                                onPress={() => setShow(true)}
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Ionicons
+                                  name="bookmark"
+                                  size={24}
+                                  color="white"
+                                />
+                                <Text style={styles.text}>Tiêu chuẩn </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                       </View>
                     </View>
                   </View>
                 </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginLeft: 12,
-                  }}
-                >
-                  <Checkbox
-                    isCheck={activeAll}
-                    onPress={() => handleCheckAll(!activeAll)}
-                    size={30}
-                  />
-                  <Text
-                    allowFontScaling={false}
-                    style={[
-                      styles.text,
-                      { paddingHorizontal: 12, fontSize: adjust(18) },
-                    ]}
-                  >
-                    Chọn tất cả
-                  </Text>
-                </View>
-
-                {isLoadingDetail === false &&
-                  dataChecklistFilter &&
-                  dataChecklistFilter?.length > 0 && (
-                    <>
-                      <FlatList
-                        style={{
-                          margin: 12,
-                          flex: 1,
-                          marginBottom: 80,
-                        }}
-                        data={dataChecklistFilter}
-                        renderItem={({ item, index, separators }) =>
-                          renderItem(item, index)
-                        }
-                        ItemSeparatorComponent={() => (
-                          <View style={{ height: 16 }} />
-                        )}
-                        keyExtractor={(item, index) =>
-                          `${item?.ID_Checklist}_${index}`
-                        }
-                      />
-                    </>
-                  )}
-
-                {isLoadingDetail === true &&
-                  dataChecklistFilter?.length == 0 && (
-                    <View
-                      style={{
-                        flex: 1,
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <ActivityIndicator
-                        style={{
-                          marginRight: 4,
-                        }}
-                        size="large"
-                        color={COLORS.bg_white}
-                      ></ActivityIndicator>
-                    </View>
-                  )}
-
-                {isLoadingDetail === false &&
-                  dataChecklistFilter?.length == 0 && (
-                    <View
-                      style={{
-                        flex: 1,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 80,
-                      }}
-                    >
-                      <Image
-                        source={require("../../../assets/icons/delete_bg.png")}
-                        resizeMode="contain"
-                        style={{ height: 120, width: 120 }}
-                      />
-                      <Text
-                        allowFontScaling={false}
-                        style={[styles.danhmuc, { padding: 10 }]}
-                      >
-                        {isScan
-                          ? "Không thấy checklist cho hạng mục này"
-                          : "Không còn checklist cho hạng mục này !"}
-                      </Text>
-                    </View>
-                  )}
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 15,
-                    flexDirection: "row",
-                    justifyContent: "space-around",
-                    alignItems: "center",
-                    width: "100%",
-                  }}
-                >
-                  <Button
-                    text={"Hoàn Thành"}
-                    isLoading={loadingSubmit}
-                    backgroundColor={COLORS.bg_button}
-                    color={"white"}
-                    onPress={() => handleSubmit()}
-                  />
-                </View>
               </View>
-            </ImageBackground>
-
-            <BottomSheetModal
-              ref={bottomSheetModalRef}
-              index={0}
-              snapPoints={snapPoints}
-              onChange={handleSheetChanges}
-            >
-              <View style={styles.contentContainer}>
-                <ModalPopupDetailChecklist
-                  handlePopupClear={handlePopupClear}
-                  dataItem={dataItem}
-                  handleItemClick={handleItemClick}
-                  index={index}
-                  // handleChange={handleChange}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: 12,
+                }}
+              >
+                <Checkbox
+                  isCheck={activeAll}
+                  onPress={() => handleCheckAll(!activeAll)}
+                  size={30}
                 />
-              </View>
-            </BottomSheetModal>
-
-            {/* Modal show tieu chuan  */}
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisibleTieuChuan}
-              onRequestClose={() => {
-                setModalVisibleTieuChuan(!modalVisibleTieuChuan);
-              }}
-            >
-              <View style={[styles.centeredView, { height: "100%" }]}>
-                <View
+                <Text
+                  allowFontScaling={false}
                   style={[
-                    styles.modalView,
-                    {
-                      width: "60%",
-                      height: "auto",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      alignContent: "center",
-                    },
+                    styles.text,
+                    { paddingHorizontal: 12, fontSize: adjust(18) },
                   ]}
                 >
-                  <ScrollView>
+                  Chọn tất cả
+                </Text>
+              </View>
+
+              {isLoadingDetail === false &&
+                dataChecklistFilter &&
+                dataChecklistFilter?.length > 0 && (
+                  <>
+                    <FlatList
+                      style={{
+                        margin: 12,
+                        flex: 1,
+                        marginBottom: 80,
+                      }}
+                      data={dataChecklistFilter}
+                      renderItem={({ item, index, separators }) =>
+                        renderItem(item, index)
+                      }
+                      ItemSeparatorComponent={() => (
+                        <View style={{ height: 16 }} />
+                      )}
+                      keyExtractor={(item, index) =>
+                        `${item?.ID_Checklist}_${index}`
+                      }
+                    />
+                  </>
+                )}
+
+              {isLoadingDetail === true && dataChecklistFilter?.length == 0 && (
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <ActivityIndicator
+                    style={{
+                      marginRight: 4,
+                    }}
+                    size="large"
+                    color={COLORS.bg_white}
+                  ></ActivityIndicator>
+                </View>
+              )}
+
+              {isLoadingDetail === false &&
+                dataChecklistFilter?.length == 0 && (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: 80,
+                    }}
+                  >
+                    <Image
+                      source={require("../../../assets/icons/delete_bg.png")}
+                      resizeMode="contain"
+                      style={{ height: 120, width: 120 }}
+                    />
                     <Text
                       allowFontScaling={false}
-                      style={{ paddingBottom: 30 }}
+                      style={[styles.danhmuc, { padding: 10 }]}
                     >
-                      {tieuchuan}{" "}
+                      {isScan
+                        ? "Không thấy checklist cho hạng mục này"
+                        : "Không còn checklist cho hạng mục này !"}
                     </Text>
-                  </ScrollView>
-                  <Button
-                    text={"Đóng"}
-                    backgroundColor={COLORS.bg_button}
-                    color={"white"}
-                    onPress={() => {
-                      setModalVisibleTieuChuan(false);
-                      setOpacity(1);
-                    }}
-                  />
-                </View>
-              </View>
-            </Modal>
-
-            <Modal
-              animationType={"slide"}
-              transparent={false}
-              visible={show}
-              onRequestClose={() => {
-                console.log("Modal has been closed.");
-              }}
-            >
-              <TouchableOpacity onPress={() => setShow(false)}>
-                <Ionicons
-                  name="close"
-                  size={40}
-                  color="black"
-                  style={{
-                    marginTop: 10,
-                    textAlign: "right",
-                    paddingRight: 10,
-                  }}
-                />
-              </TouchableOpacity>
-              {Hangmuc?.FileTieuChuan !== null &&
-                Hangmuc?.FileTieuChuan !== undefined && (
-                  <View style={{ flex: 1 }}>
-                    {loading && (
-                      <ActivityIndicator
-                        size="large"
-                        color="#0000ff"
-                        style={{
-                          position: "absolute",
-                          top: "50%",
-                          left: "50%",
-                          zIndex: 1,
-                        }}
-                      />
-                    )}
-                    <WebView
-                      customStyle={{
-                        readerContainerNavigateArrow: true,
-                        readerContainerNavigate: true,
-                      }}
-                      style={{ flex: 1 }}
-                      source={{
-                        uri: Hangmuc?.FileTieuChuan,
-                      }}
-                      onLoadStart={() => setLoading(true)}
-                      onLoadEnd={() => setLoading(false)}
-                    />
                   </View>
                 )}
-            </Modal>
-          </BottomSheetModalProvider>
-        </TouchableWithoutFeedback>
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 20,
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <Button
+
+                  text={"Hoàn Thành"}
+                  isLoading={loadingSubmit || !location}
+                  backgroundColor={(loadingSubmit || !location) ? 'gray' :  COLORS.bg_button}
+                  color={"white"}
+                  onPress={() => handleSubmit()}
+                />
+              </View>
+            </View>
+          </ImageBackground>
+
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+          >
+            <View style={styles.contentContainer}>
+              <ModalPopupDetailChecklist
+                handlePopupClear={handlePopupClear}
+                dataItem={dataItem}
+                handleItemClick={handleItemClick}
+                index={index}
+                // handleChange={handleChange}
+              />
+            </View>
+          </BottomSheetModal>
+
+          {/* Modal show tieu chuan  */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisibleTieuChuan}
+            onRequestClose={() => {
+              setModalVisibleTieuChuan(!modalVisibleTieuChuan);
+            }}
+          >
+            <View style={[styles.centeredView, { height: "100%" }]}>
+              <View
+                style={[
+                  styles.modalView,
+                  {
+                    width: "60%",
+                    height: "auto",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    alignContent: "center",
+                  },
+                ]}
+              >
+                <ScrollView>
+                  <Text allowFontScaling={false} style={{ paddingBottom: 30 }}>
+                    {tieuchuan}{" "}
+                  </Text>
+                </ScrollView>
+                <Button
+                  text={"Đóng"}
+                  backgroundColor={COLORS.bg_button}
+                  color={"white"}
+                  onPress={() => {
+                    setModalVisibleTieuChuan(false);
+                    setOpacity(1);
+                  }}
+                />
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            animationType={"slide"}
+            transparent={false}
+            visible={show}
+            onRequestClose={() => {
+              console.log("Modal has been closed.");
+            }}
+          >
+            <TouchableOpacity onPress={() => setShow(false)}>
+              <Ionicons
+                name="close"
+                size={40}
+                color="black"
+                style={{
+                  marginTop: 10,
+                  textAlign: "right",
+                  paddingRight: 10,
+                }}
+              />
+            </TouchableOpacity>
+            {Hangmuc?.FileTieuChuan !== null &&
+              Hangmuc?.FileTieuChuan !== undefined && (
+                <View style={{ flex: 1 }}>
+                  {loading && (
+                    <ActivityIndicator
+                      size="large"
+                      color="#0000ff"
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
+                  <WebView
+                    customStyle={{
+                      readerContainerNavigateArrow: true,
+                      readerContainerNavigate: true,
+                    }}
+                    style={{ flex: 1 }}
+                    source={{
+                      uri: Hangmuc?.FileTieuChuan,
+                    }}
+                    onLoadStart={() => setLoading(true)}
+                    onLoadEnd={() => setLoading(false)}
+                  />
+                </View>
+              )}
+          </Modal>
+          {/* </TouchableWithoutFeedback> */}
+        </BottomSheetModalProvider>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Checklist PMC",
     "slug": "checklist-pmc",
-    "version": "2.0.0",
+    "version": "2.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -25,7 +25,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,
-      "package": "com.anonymous.PMCCHECKLISTAPP",
+      "package": "com.anonymous.PMCCHECKLIST",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -40,15 +40,15 @@
       "userInterfaceStyle": "automatic"
     },
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
+      "requireFullScreen": false,
       "userInterfaceStyle": "automatic",
       "splash": {
         "image": "./assets/bg.png",
         "resizeMode": "contain",
         "backgroundColor": "#ffffff"
       },
-      "buildNumber": "7",
-      "bundleIdentifier": "com.anonymous.PMCCHECKLISTAPP",
+      "bundleIdentifier": "com.anonymous.PMCCHECKLIST",
       "runtimeVersion": {
         "policy": "sdkVersion"
       },

@@ -112,7 +112,6 @@ const ThucHienHangmucLai = ({ route, navigation }) => {
   };
 
   const toggleTodo = (item) => {
-    console.log(JSON.stringify(item, null, 2));
     const isExistIndex = dataSelect.find(
       (existingItem) => existingItem === item
     );
@@ -289,7 +288,7 @@ const ThucHienHangmucLai = ({ route, navigation }) => {
                 <View
                   style={{
                     position: "absolute",
-                    bottom: 40,
+                    bottom: 30,
                     flexDirection: "row",
                     justifyContent: "space-around",
                     alignItems: "center",
@@ -298,7 +297,7 @@ const ThucHienHangmucLai = ({ route, navigation }) => {
                 >
                   {hangMuc.length > 0 && (
                     <Button
-                      text={"Scan QR Code"}
+                      text={"Quét Qrcode"}
                       backgroundColor={"white"}
                       color={"black"}
                       onPress={() => handleOpenQrCode()}
