@@ -30,6 +30,7 @@ import {
   ent_khuvuc_get,
 } from "../../redux/actions/entActions";
 import { Provider, useDispatch, useSelector } from "react-redux";
+import NetInfo from "@react-native-community/netinfo";
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -46,9 +47,7 @@ import adjust from "../../adjust";
 const ThucHienChecklist = ({ navigation }) => {
   const ref = useRef(null);
   const dispath = useDispatch();
-  const { ent_calv, ent_hangmuc } = useSelector(
-    (state) => state.entReducer
-  );
+  const { ent_calv, ent_hangmuc } = useSelector((state) => state.entReducer);
   const { tb_checklistc } = useSelector((state) => state.tbReducer);
   const { user, authToken } = useSelector((state) => state.authReducer);
   const { setDataHangmuc, stepKhuvuc } = useContext(DataContext);
@@ -57,6 +56,15 @@ const ThucHienChecklist = ({ navigation }) => {
 
   const [newActionCheckList, setNewActionCheckList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [isConnected, setConnected] = useState(true);
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setConnected(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (tb_checklistc?.data) {
@@ -114,15 +122,22 @@ const ThucHienChecklist = ({ navigation }) => {
     }
   };
 
-  const handleChecklistDetail = (id1, id2, id3, id4) => {
-    navigation.navigate("Thực hiện khu vực lại", {
-      ID_ChecklistC: id1,
-      ID_KhoiCV: id2,
-      ID_ThietLapCa: id3,
-      ID_Hangmucs: id4,
-    });
+  const handleChecklistDetail = async (id1, id2, id3, id4) => {
+    if (isConnected) {
+      navigation.navigate("Thực hiện khu vực lại", {
+        ID_ChecklistC: id1,
+        ID_KhoiCV: id2,
+        ID_ThietLapCa: id3,
+        ID_Hangmucs: id4,
+      });
 
-    setNewActionCheckList([]);
+      setNewActionCheckList([]);
+    } else {
+      Alert.alert(
+        "Không có kết nối mạng",
+        "Vui lòng kiểm tra kết nối mạng của bạn."
+      );
+    }
   };
 
   const _renderItem = ({ item, index }) => {
@@ -224,6 +239,7 @@ const ThucHienChecklist = ({ navigation }) => {
                       keyExtractor={(item, index) =>
                         `${item?.ID_ChecklistC}_${index}`
                       }
+                      showsVerticalScrollIndicator={false}
                     />
                   )}
                 </>
@@ -255,10 +271,9 @@ const ThucHienChecklist = ({ navigation }) => {
                           )
                         }
                       >
-                        <MaterialIcons
-                          name="navigate-next"
-                          size={adjust(40)}
-                          color="white"
+                        <Image
+                          source={require("../../../assets/icons/ic_button_back.png")}
+                          style={styles.closeIcon}
                         />
                       </TouchableOpacity>
                     </>
@@ -351,6 +366,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
+  },
+  closeIcon: {
+    width: adjust(30),
+    height: adjust(30),
+    tintColor: "white",
+    transform: [{ scaleX: -1 }],
   },
 });
 

@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Checklist PMC",
-    "slug": "checklist-pmc",
-    "version": "2.0.2",
+    "slug": "pmc-checklist-ios",
+    "version": "2.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -25,7 +25,7 @@
       },
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,
-      "package": "com.anonymous.PMCCHECKLIST",
+      "package": "com.pmc.PMCCHECKLIST",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -48,7 +48,8 @@
         "resizeMode": "contain",
         "backgroundColor": "#ffffff"
       },
-      "bundleIdentifier": "com.anonymous.PMCCHECKLIST",
+      "buildNumber": "7",
+      "bundleIdentifier": "com.pmc.PMCCHECKLIST",
       "runtimeVersion": {
         "policy": "sdkVersion"
       },
@@ -77,12 +78,6 @@
         }
       ],
       [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "The app needs access to your camera to scan QR codes and barcodes."
-        }
-      ],
-      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "The app needs access to your location to provide suggestions about nearby places and improve your experience."
@@ -106,7 +101,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "5605c75c-4a5a-439f-8b82-d5919c5c4bf2"
+        "projectId": "8db93eb7-fea2-48e4-8249-39e642c81bb3"
       }
     },
     "updates": {

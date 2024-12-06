@@ -35,12 +35,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Feather } from "@expo/vector-icons";
 import { DataTable } from "react-native-paper";
 import { COLORS, SIZES } from "../../constants/theme";
-import {
-  ent_tang_get,
-  ent_khuvuc_get,
-  ent_toanha_get,
-  ent_khoicv_get,
-} from "../../redux/actions/entActions";
 import axios from "axios";
 import { BASE_URL } from "../../constants/config";
 import moment from "moment";
@@ -58,10 +52,6 @@ const headerList = [
     til: "Checklist",
     width: 200,
   },
-  // {
-  //   til: "Tên tòa nhà",
-  //   width: 150,
-  // },
   {
     til: "Thuộc tầng",
     width: 150,
@@ -89,7 +79,7 @@ const headerList = [
   },
 ];
 
-const DanhmucTracuu = () => {
+const DanhmucChiTietTracuu = () => {
   const dispath = useDispatch();
   const { ent_tang, ent_khuvuc, ent_toanha } = useSelector(
     (state) => state.entReducer
@@ -131,7 +121,6 @@ const DanhmucTracuu = () => {
     ID_Khuvuc: null,
     ID_Tang: null,
   });
-
 
   useEffect(() => {
     setDataKhuvuc(ent_khuvuc);
@@ -374,6 +363,7 @@ const DanhmucTracuu = () => {
     );
   };
 
+  
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -683,7 +673,7 @@ const DanhmucTracuu = () => {
                             objectFit:'cover',
                           }}
                           source={{
-                            uri: `https://drive.google.com/thumbnail?id=${newActionCheckList[0]?.Anh}`,
+                            uri: `https://lh3.googleusercontent.com/d/${newActionCheckList[0]?.Anh}=s1000?authuser=0`,
                           }}
                         />
                       )}
@@ -778,7 +768,7 @@ const DanhmucTracuu = () => {
   );
 };
 
-export default DanhmucTracuu;
+export default DanhmucChiTietTracuu;
 
 const styles = StyleSheet.create({
   container: {

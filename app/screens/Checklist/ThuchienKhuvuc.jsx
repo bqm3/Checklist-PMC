@@ -31,7 +31,7 @@ import DataContext from "../../context/DataContext";
 import ChecklistContext from "../../context/ChecklistContext";
 import adjust from "../../adjust";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Network from "expo-network";
+import NetInfo from "@react-native-community/netinfo";
 import ConnectContext from "../../context/ConnectContext";
 import axiosClient from "../../api/axiosClient";
 
@@ -75,15 +75,56 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const [dataChecklistFaild, setDataChecklistFaild] = useState([]);
   const [dataFilterHandler, setDataFilterHandler] = useState([]);
 
+  const [isConnected, setConnected] = useState(true);
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setConnected(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const init_checklist = async () => {
     setIsLoadingDetail(true);
     await dispath(ent_checklist_mul_hm(ID_Hangmucs, ID_Calv, ID_ChecklistC));
-    setIsLoadingDetail(false)
+    setIsLoadingDetail(false);
   };
+  console.log('ID_ChecklistC', ID_ChecklistC)
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      const filteredItems = dataChecklistFilterContext.filter(
+        (item) => item.valueCheck !== null
+      );
+      if (filteredItems.length === 0) {
+        return;
+      }
+
+      e.preventDefault();
+      Alert.alert(
+        "PMC",
+        "Thoát khỏi khu vực sẽ mất hết checklist đã kiểm tra. Vui lòng xác nhận",
+        [
+          {
+            text: "Hủy",
+            onPress: () => console.log("Hủy Pressed"),
+            style: "cancel",
+          },
+          {
+            text: "Xác nhận",
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, dataChecklistFilterContext]);
+
   useEffect(() => {
     const ID_HangmucsArray = Array.isArray(ID_Hangmucs)
       ? ID_Hangmucs
-      : ID_Hangmucs.split(",").map(Number);
+      : ID_Hangmucs?.split(",")?.map(Number);
     setStepKhuvuc(1);
     // Kiểm tra xem mảng ent_khuvuc có dữ liệu không
     if (ent_khuvuc && ent_khuvuc.length > 0) {
@@ -138,17 +179,25 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       try {
         // Retrieve the item from AsyncStorage
         const network = await AsyncStorage.getItem("checkNetwork");
-        if (network === "1" && isConnect) {
+        const savedData = await AsyncStorage.getItem(
+          `dataChecklistStorage_${ID_ChecklistC}`
+        );
+        if (
+          (network === "close" && isConnect) ||
+          (savedData !== null && savedData !== undefined && savedData !== "")
+        ) {
           setSubmit(true);
         }
 
-        if (network === null) {
-          console.log("Network status not found in storage.");
+        if (
+          network === null &&
+          (savedData == null || savedData == undefined || savedData == "")
+        ) {
           setSubmit(false);
         }
       } catch (error) {
         // Handle any errors that occur
-        console.log("Error fetching network status:", error);
+        console.log("Error fetching network status 123:", error);
         setSubmit(false);
       }
     };
@@ -163,8 +212,10 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
   // Tải lại dữ liệu khi vào lại trang
   const loadData = async () => {
-    const savedData = await AsyncStorage.getItem("dataChecklist");
-    if (savedData !== null) {
+    const savedData = await AsyncStorage.getItem(
+      `dataChecklistStorage_${ID_ChecklistC}`
+    );
+    if (savedData !== null && savedData !== undefined && savedData !== "") {
       setDataChecklists(JSON.parse(savedData));
       setDataChecklistFilterContext(JSON.parse(savedData));
     } else {
@@ -200,10 +251,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   }, [dataChecklistFilterContext]);
 
   const handlePushDataFilterQr = async (value) => {
-    const cleanedValue = value
-      .replace(/^http:\/\//, "")
-      .trim()
-      .toLowerCase();
+    const cleanedValue = value.trim().toLowerCase();
 
     try {
       const resDataKhuvuc = ent_khuvuc.filter(
@@ -230,11 +278,13 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           ID_Calv: ID_Calv,
           ID_Khuvuc: resDataKhuvuc[0].ID_Khuvuc,
           dataFilterHandler: dataFilterHandler,
+          ID_Hangmucs: ID_Hangmucs
         });
       } else if (resDataKhuvuc.length === 0 && resDataHangmuc.length === 0) {
         Alert.alert(
           "PMC Thông báo",
-          "Không tìm thấy khu vực, hạng mục có mã Qr phù hợp",
+          // `Khu vực hoặc hạng mục có qrcode: "${cleanedValue}" không thuộc ca làm việc này`,
+          `Khu vực hoặc hạng mục có qrcode: "${cleanedValue}" không thuộc ca làm việc này`,
           [
             {
               text: "Hủy",
@@ -284,26 +334,28 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   };
 
   const handleSubmitChecklist = async () => {
-    const groupedByID_Hangmuc = defaultActionDataChecklist.reduce((acc, item) => {
-      if (!acc[item.ID_Hangmuc]) {
-        acc[item.ID_Hangmuc] = [];
-      }
-      acc[item.ID_Hangmuc].push(item);
-      return acc;
-    }, {});
-    
+    const groupedByID_Hangmuc = defaultActionDataChecklist.reduce(
+      (acc, item) => {
+        if (!acc[item.ID_Hangmuc]) {
+          acc[item.ID_Hangmuc] = [];
+        }
+        acc[item.ID_Hangmuc].push(item);
+        return acc;
+      },
+      {}
+    );
+
     const resultArray = Object.values(groupedByID_Hangmuc);
 
     try {
-      const networkState = await Network.getNetworkStateAsync();
-      if (networkState.isConnected) {
+      if (isConnected) {
         setLoadingSubmit(true);
         if (
           defaultActionDataChecklist.length === 0 &&
           dataChecklistFaild.length === 0
         ) {
           await AsyncStorage.removeItem("checkNetwork");
-          await AsyncStorage.removeItem("dataChecklist");
+
           // Hiển thị thông báo cho người dùng
           Alert.alert("PMC Thông báo", "Không có checklist để kiểm tra!", [
             { text: "OK", onPress: () => console.log("OK Pressed") },
@@ -318,7 +370,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           dataChecklistFaild.length > 0
         ) {
           // Xử lý API cho dataChecklistFaild
-          await handleDataChecklistFaild();
+          await handleDataChecklistFaild(dataChecklistFaild);
         } else if (
           defaultActionDataChecklist.length > 0 &&
           dataChecklistFaild.length == 0
@@ -338,7 +390,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           "Không có kết nối mạng",
           "Vui lòng kiểm tra kết nối mạng của bạn."
         );
-        await AsyncStorage.setItem("checkNetwork", "1");
+        await AsyncStorage.setItem("checkNetwork", "close");
       }
     } catch (error) {
       // Cập nhật sau khi hoàn thành xử lý API} catch (error) {
@@ -348,7 +400,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   };
 
   // api faild tb_checklistchitiet
-  const handleDataChecklistFaild = async () => {
+  const handleDataChecklistFaild = async (dataChecklistFaild) => {
     try {
       setLoadingSubmit(true);
       // Create a new FormData instance
@@ -366,6 +418,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         // Iterate over all items in dataChecklistFaild
         dataChecklistFaild.forEach((item, index) => {
           // Extract and append checklist details to formData
+          formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
           formData.append("Ketqua", item.valueCheck || "");
@@ -374,24 +427,28 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           formData.append("Vido", item.Vido || "");
           formData.append("Kinhdo", item.Kinhdo || "");
           formData.append("Docao", item.Docao || "");
+          formData.append("isScan", item.isScan || null);
 
           // If there is an image, append it to formData
-          if (item.Anh) {
-            const file = {
-              uri:
-                Platform.OS === "android"
-                  ? item.Anh.uri
-                  : item.Anh.uri.replace("file://", ""),
-              name:
-                item.Anh.fileName ||
-                `${Math.floor(Math.random() * 999999999)}.jpg`,
-              type: "image/jpeg",
-            };
-            formData.append(`Images_${index}`, file);
-            formData.append("Anh", file.name);
-          } else {
-            // formData.append("Anh", "");
-            // formData.append(`Images_${index}`, {});
+          if (item.Anh && Array.isArray(item.Anh)) {
+            item.Anh.forEach((image, imgIndex) => {
+              const file = {
+                uri:
+                  Platform.OS === "android"
+                    ? image.uri
+                    : image.uri.replace("file://", ""),
+                name:
+                  image.fileName ||
+                  `${Math.floor(Math.random() * 999999999)}_${
+                    item.ID_Checklist
+                  }_${imgIndex}.jpg`,
+                type: "image/jpg",
+              };
+              formData.append(
+                `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
+                file
+              );
+            });
           }
         });
 
@@ -405,7 +462,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           })
           .then(async (res) => {
             await AsyncStorage.removeItem("checkNetwork");
-            await AsyncStorage.removeItem("dataChecklist");
+
             setSubmit(false);
             postHandleSubmit();
             setLoadingSubmit(false);
@@ -443,15 +500,20 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     }
   };
 
-  const handleDefaultActionDataChecklist = async (defaultActionDataChecklist) => {
+  const handleDefaultActionDataChecklist = async (
+    defaultActionDataChecklist
+  ) => {
     setLoadingSubmit(true);
     try {
       for (const ItemDefaultActionDataChecklist of defaultActionDataChecklist) {
-        const descriptions = ItemDefaultActionDataChecklist
-          .map((item) => item.ID_Checklist)
-          .join(",");
+        const descriptions = ItemDefaultActionDataChecklist.map(
+          (item) => item.ID_Checklist
+        ).join(",");
         const ID_Checklists = ItemDefaultActionDataChecklist.map(
           (item) => item.ID_Checklist
+        );
+        const valueChecks = ItemDefaultActionDataChecklist.map(
+          (item) => item.valueCheck
         );
 
         const requestDone = axios.post(
@@ -460,11 +522,13 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             Description: descriptions,
             Gioht: ItemDefaultActionDataChecklist[0].Gioht,
             ID_Checklists: ID_Checklists,
+            valueChecks: valueChecks,
             ID_ChecklistC: ID_ChecklistC,
             checklistLength: ItemDefaultActionDataChecklist.length,
             Vido: ItemDefaultActionDataChecklist[0]?.Vido || null,
             Kinhdo: ItemDefaultActionDataChecklist[0]?.Kinhdo || null,
             Docao: ItemDefaultActionDataChecklist[0]?.Docao || null,
+            isScan: ItemDefaultActionDataChecklist[0]?.isScan || null,
           },
           {
             headers: {
@@ -473,20 +537,18 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             },
           }
         );
-  
-       
+
         await requestDone;
       }
-  
+
       // Xử lý sau khi tất cả các yêu cầu hoàn thành
       postHandleSubmit();
       setLoadingSubmit(false);
       await AsyncStorage.removeItem("checkNetwork");
-      await AsyncStorage.removeItem("dataChecklist");
+
       setSubmit(false);
       saveConnect(false);
 
-     
       Alert.alert("PMC Thông báo", "Checklist thành công", [
         {
           text: "Hủy",
@@ -530,31 +592,37 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       } else {
         // Lặp qua từng phần tử trong dataChecklistFaild để thêm vào FormData
         dataChecklistFaild.forEach((item, index) => {
+          formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
           formData.append("Ketqua", item.valueCheck || "");
           formData.append("Gioht", item.Gioht);
           formData.append("Ghichu", item.GhichuChitiet || "");
-          formData.append("Vido", item?.Vido || "");
-          formData.append("Kinhdo", item?.Kinhdo || "");
-          formData.append("Docao", item?.Docao || "");
+          formData.append("Vido", item?.Vido || null);
+          formData.append("Kinhdo", item?.Kinhdo || null);
+          formData.append("Docao", item?.Docao || null);
+          formData.append("isScan", item.isScan || null);
+
           // Nếu có hình ảnh, thêm vào FormData
-          if (item.Anh) {
-            const file = {
-              uri:
-                Platform.OS === "android"
-                  ? item.Anh.uri
-                  : item.Anh.uri.replace("file://", ""),
-              name:
-                item.Anh.fileName ||
-                `${Math.floor(Math.random() * 999999999)}.jpg`,
-              type: "image/jpeg",
-            };
-            formData.append(`Images_${index}`, file);
-            formData.append("Anh", file.name);
-          } else {
-            // formData.append("Anh", "");
-            // formData.append(`Images_${index}`, {});
+          if (item.Anh && Array.isArray(item.Anh)) {
+            item.Anh.forEach((image, imgIndex) => {
+              const file = {
+                uri:
+                  Platform.OS === "android"
+                    ? image.uri
+                    : image.uri.replace("file://", ""),
+                name:
+                  image.fileName ||
+                  `${Math.floor(Math.random() * 999999999)}_${
+                    item.ID_Checklist
+                  }_${imgIndex}.jpg`,
+                type: "image/jpg",
+              };
+              formData.append(
+                `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
+                file
+              );
+            });
           }
         });
         // Tạo các yêu cầu API
@@ -577,6 +645,10 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             const ID_Checklists = ItemDefaultActionDataChecklist.map(
               (item) => item.ID_Checklist
             );
+            const valueChecks = ItemDefaultActionDataChecklist.map(
+              (item) => item.valueCheck
+            );
+
             // Thực hiện yêu cầu API
             return axios.post(
               BASE_URL + "/tb_checklistchitietdone/create",
@@ -584,11 +656,13 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                 Description: descriptions,
                 Gioht: ItemDefaultActionDataChecklist[0].Gioht,
                 ID_Checklists: ID_Checklists,
+                valueChecks: valueChecks,
                 ID_ChecklistC: ID_ChecklistC,
                 checklistLength: ItemDefaultActionDataChecklist.length,
                 Vido: ItemDefaultActionDataChecklist[0]?.Vido || null,
                 Kinhdo: ItemDefaultActionDataChecklist[0]?.Kinhdo || null,
                 Docao: ItemDefaultActionDataChecklist[0]?.Docao || null,
+                isScan: ItemDefaultActionDataChecklist[0]?.isScan || null,
               },
               {
                 headers: {
@@ -607,7 +681,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
               postHandleSubmit();
               setLoadingSubmit(false);
               await AsyncStorage.removeItem("checkNetwork");
-              await AsyncStorage.removeItem("dataChecklist");
+
               setSubmit(false);
               saveConnect(false);
               // Hiển thị thông báo thành công
@@ -622,6 +696,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             })
           )
           .catch((error) => {
+            console.log("Error: 1" + error);
             setLoadingSubmit(false);
 
             if (error.response) {
@@ -671,6 +746,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           });
       }
     } catch (error) {
+      console.log("error", error);
       setLoadingSubmit(false);
       Alert.alert(
         "PMC Thông báo",
@@ -687,28 +763,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     }
   };
 
-  // const postHandleSubmit = () => {
-  //   const idsToRemove = new Set([
-  //     ...defaultActionDataChecklist.map((item) => item.ID_Checklist),
-  //     ...dataChecklistFaild.map((item) => item.ID_Checklist),
-  //   ]);
-
-  //   // Filter out items in dataChecklistFilterContext that are present in idsToRemove
-  //   const dataChecklistFilterContextReset = dataChecklistFilterContext.filter(
-  //     (item) => !idsToRemove.has(item.ID_Checklist)
-  //   );
-
-  //   // Update state with the filtered context
-  //  const dataChecklist = dataChecklistFilterContextReset?.filter(
-  //     (item) => item.ID_Hangmuc == ID_Hangmuc
-  //   );
-
-  //   // Update state with the filtered context
-  //   setDataChecklistFilterContext(dataChecklistFilterContextReset);
-  //   setDataChecklistDefault([]);
-  //   setDataChecklistFaild([]);
-  // };
-  const postHandleSubmit = () => {
+  const postHandleSubmit = async () => {
     const idsToRemove = new Set([
       ...defaultActionDataChecklist.map((item) => item.ID_Checklist),
       ...dataChecklistFaild.map((item) => item.ID_Checklist),
@@ -718,11 +773,11 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       (item) => !idsToRemove.has(item.ID_Checklist)
     );
 
-    const dataChecklist = dataChecklistFilterContextReset?.filter(
-      (item) => item.ID_Hangmuc == ID_Hangmuc
-    );
-
     setDataChecklistFilterContext(dataChecklistFilterContextReset);
+    await AsyncStorage.setItem(
+      `dataChecklistStorage_${ID_ChecklistC}`,
+      JSON.stringify(dataChecklistFilterContextReset)
+    );
     setDataChecklistDefault([]);
     setDataChecklistFaild([]);
 
@@ -781,6 +836,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
       ID_Calv: ID_Calv,
       ID_Khuvuc: dataSelect[0].ID_Khuvuc,
       dataFilterHandler: dataFilterHandler,
+      Tenkv: `${dataSelect[0]?.Tenkhuvuc} - ${dataSelect[0]?.ent_toanha?.Toanha}`,
+      ID_Hangmucs: ID_Hangmucs
     });
     setDataSelect([]);
   };
@@ -923,12 +980,15 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                           gap: 8,
                         }}
                       >
-                        {isLoadingDetail == false && <Text
-                          allowFontScaling={false}
-                          style={[styles.text, { fontSize: adjust(18) }]}
-                        >
-                          Số lượng: {decimalNumber(dataKhuvuc?.length)} khu vực
-                        </Text>}
+                        {isLoadingDetail == false && (
+                          <Text
+                            allowFontScaling={false}
+                            style={[styles.text, { fontSize: adjust(18) }]}
+                          >
+                            Số lượng: {decimalNumber(dataKhuvuc?.length)} khu
+                            vực
+                          </Text>
+                        )}
                       </View>
                       {submit === true && (
                         <Button
@@ -938,7 +998,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                           color={"white"}
                           onPress={() => handleSubmitChecklist()}
                         />
-                      )} 
+                      )}
                     </View>
                   </View>
                 </View>
@@ -963,9 +1023,35 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                         keyExtractor={(item, index) =>
                           `${item?.ID_Checklist}_${index}`
                         }
+                        showsVerticalScrollIndicator={false}
                       />
                     </>
                   )}
+
+                {isLoadingDetail === false && dataKhuvuc.length == 0 && (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: 80,
+                    }}
+                  >
+                    <Image
+                      source={require("../../../assets/icons/delete_bg.png")}
+                      resizeMode="contain"
+                      style={{ height: 120, width: 120 }}
+                    />
+                    <Text
+                      allowFontScaling={false}
+                      style={[styles.danhmuc, { padding: 10 }]}
+                    >
+                      {isScan
+                        ? "Không thấy khu vực này"
+                        : "Khu vực của ca này đã hoàn thành !"}
+                    </Text>
+                  </View>
+                )}
 
                 {isLoadingDetail === true && (
                   <View
@@ -1005,7 +1091,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                     >
                       {isScan
                         ? "Không thấy khu vực này"
-                        : "Không có khu vực trong ca làm việc này !"}
+                        : "Khu vực của ca này đã hoàn thành !"}
                     </Text>
                   </View>
                 )}

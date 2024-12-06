@@ -46,7 +46,7 @@ export const tb_checklist_get_lai = (id) => {
           const processedData = data?.map((item) => {
             return {
               ...item,
-              Giatrinhan: item?.Giatrinhan?.split("/"),
+              Giatrinhan: item?.Giatrinhan?.split("/").map((item) => item.trim()),
               valueCheck: null,
               GhichuChitiet: "",
               ID_ChecklistC: ID_ChecklistC,
@@ -96,3 +96,32 @@ export const tb_sucongoai_get = () => {
       }
     };
 };
+
+
+export const baocaochiso_get = () => {
+  return async (dispatch) => {
+      try {
+        const token = await AsyncStorage.getItem("tokenUser");
+     if (token !== null) {
+          const response = await axios.get(BASE_URL + `/ent_baocaochiso`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: "Bearer " + token,
+            },
+          });
+          const data = response.data;
+          dispatch({
+            type: type.SET_BAOCAOCHISO_SUCCESS,
+            payload: {
+              baocaochiso: data.data,
+            },
+          });
+        } else {
+          console.error("initialized error");
+        }
+      } catch (error) {
+        console.log("err baocaochiso_get", error.response.data.message);
+      }
+    };
+};
+

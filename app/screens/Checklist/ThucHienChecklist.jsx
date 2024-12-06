@@ -33,14 +33,12 @@ import {
   BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AntDesign, Ionicons, Feather } from "@expo/vector-icons";
-import { DataTable } from "react-native-paper";
+
+import * as FileSystem from "expo-file-system";
 import ButtonChecklist from "../../components/Button/ButtonCheckList";
 import { COLORS, SIZES } from "../../constants/theme";
 import {
   ent_calv_get,
-  ent_hangmuc_get,
-  ent_khuvuc_get,
 } from "../../redux/actions/entActions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { tb_checklistc_get } from "../../redux/actions/tbActions";
@@ -53,6 +51,9 @@ import ItemCaChecklist from "../../components/Item/ItemCaChecklist";
 import DataContext from "../../context/DataContext";
 import adjust from "../../adjust";
 import { useFocusEffect } from "@react-navigation/native";
+import NetInfo from "@react-native-community/netinfo";
+import CustomAlertModal from "../../components/CustomAlertModal";
+import RenderHTML from 'react-native-render-html';
 
 const ThucHienChecklist = ({ navigation }) => {
   const ref = useRef(null);
@@ -76,6 +77,8 @@ const ThucHienChecklist = ({ navigation }) => {
   const [newActionCheckList, setNewActionCheckList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [message, setMessage] = useState("");
 
   const [dataInput, setDataInput] = useState({
     dateDay: dateDay,
@@ -95,6 +98,15 @@ const ThucHienChecklist = ({ navigation }) => {
     Anh4: null,
   });
 
+  const [isConnected, setConnected] = useState(true);
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setConnected(state.isConnected);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+
   const handleChangeText = (key, value) => {
     setDataInput((data) => ({
       ...data,
@@ -111,6 +123,13 @@ const ThucHienChecklist = ({ navigation }) => {
 
   useEffect(() => {
     setDataCalv(tb_checklistc?.data);
+    if(tb_checklistc?.data && tb_checklistc?.data.length > 0){
+      const isCheck = tb_checklistc.data.some(check => check.Tinhtrang == 0)
+      const data = tb_checklistc.data.filter(check => check.Tinhtrang == 0)
+      if(!isCheck){
+        clearCacheDirectory(data)
+      }
+    }
   }, [tb_checklistc]);
 
   useEffect(() => {
@@ -129,7 +148,7 @@ const ThucHienChecklist = ({ navigation }) => {
   };
 
   const loadData = async () => {
-    await AsyncStorage.removeItem("dataChecklist");
+    
     await AsyncStorage.removeItem("checkNetwork");
   };
 
@@ -137,18 +156,33 @@ const ThucHienChecklist = ({ navigation }) => {
     init_ca();
     int_checklistc();
   }, []);
-  
+
   useFocusEffect(
     useCallback(() => {
-      // This will run every time the screen is focused
+      // init_ca();
       loadData();
+      int_checklistc();
 
-      // Optionally return a cleanup function if needed
-      return () => {
-        // Cleanup logic if necessary
-      };
-    }, []) // Dependencies for focus effect, keep it empty if you want it to run on every focus
+      return () => {};
+    }, [dispath])
   );
+
+  // Xóa cache khi không còn ca đang mở
+  const clearCacheDirectory = async (data) => {
+    try {
+      const cacheDir = FileSystem.cacheDirectory;
+      const files = await FileSystem.readDirectoryAsync(cacheDir);
+      for (const file of files) {
+        await FileSystem.deleteAsync(`${cacheDir}${file}`, {
+          idempotent: true,
+        });
+      }
+      
+      console.log("Đã xóa cache khi ứng dụng đóng.");
+    } catch (error) {
+      console.error("Lỗi khi xóa cache:", error);
+    }
+  };
 
   const toggleTodo = async (item, index) => {
     // setIsCheckbox(true);
@@ -181,8 +215,8 @@ const ThucHienChecklist = ({ navigation }) => {
               : dataImages?.Anh1?.uri.replace("file://", ""),
           name:
             dataImages?.Anh1?.fileName ||
-            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpeg",
-          type: "image/jpeg",
+            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpg",
+          type: "image/jpg",
         };
 
         // Append image file to formData
@@ -198,8 +232,8 @@ const ThucHienChecklist = ({ navigation }) => {
               : dataImages?.Anh2?.uri.replace("file://", ""),
           name:
             dataImages?.Anh2?.fileName ||
-            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpeg",
-          type: "image/jpeg",
+            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpg",
+          type: "image/jpg",
         };
 
         // Append image file to formData
@@ -215,8 +249,8 @@ const ThucHienChecklist = ({ navigation }) => {
               : dataImages?.Anh3?.uri.replace("file://", ""),
           name:
             dataImages?.Anh3?.fileName ||
-            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpeg",
-          type: "image/jpeg",
+            Math.floor(Math.random() * Math.floor(99999999999999)) + ".jpg",
+          type: "image/jpg",
         };
 
         // Append image file to formData
@@ -232,8 +266,8 @@ const ThucHienChecklist = ({ navigation }) => {
               : dataImages?.Anh4?.uri.replace("file://", ""),
           name:
             dataImages?.Anh4?.fileName ||
-            Math.floor(Math.random() * Math.floor(999999999)) + ".jpeg",
-          type: "image/jpeg",
+            Math.floor(Math.random() * Math.floor(999999999)) + ".jpg",
+          type: "image/jpg",
         };
 
         // Append image file to formData
@@ -325,6 +359,7 @@ const ThucHienChecklist = ({ navigation }) => {
       ]);
     } else {
       let data = {
+        Tenca: dataInput.Calv.Tenca,
         ID_Calv: dataInput.Calv.ID_Calv,
         ID_User: user.ID_User,
         ID_Duan: user.ID_Duan,
@@ -360,14 +395,16 @@ const ThucHienChecklist = ({ navigation }) => {
         setLoadingSubmit(false);
         if (error.response) {
           // Lỗi từ phía server (có response từ server)
-          Alert.alert("PMC Thông báo", error.response.data.message, [
-            {
-              text: "Hủy",
-              onPress: () => console.log("Cancel Pressed"),
-              style: "cancel",
-            },
-            { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-          ]);
+          // Alert.alert("PMC Thông báo", error.response.data.message, [
+          //   {
+          //     text: "Hủy",
+          //     onPress: () => console.log("Cancel Pressed"),
+          //     style: "cancel",
+          //   },
+          //   { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
+          // ]);
+          setIsModalVisible(true);
+          setMessage(error.response.data.message)
         } else if (error.request) {
           // Lỗi không nhận được phản hồi từ server
           console.log(error.request);
@@ -397,7 +434,7 @@ const ThucHienChecklist = ({ navigation }) => {
 
   const clearAsyncStorage = async () => {
     try {
-      await AsyncStorage.removeItem("dataChecklist");
+      
       await AsyncStorage.removeItem("checkNetwork");
     } catch (error) {
       console.error("Error clearing AsyncStorage:", error);
@@ -407,7 +444,6 @@ const ThucHienChecklist = ({ navigation }) => {
   const handleClosePopUp = () => {
     setOpacity(1);
     setModalVisible(false);
-    console.log(opacity);
   };
 
   const handleOpenPopUp = () => {
@@ -429,10 +465,6 @@ const ThucHienChecklist = ({ navigation }) => {
     setOpacity(1);
   }, []);
 
-  const handleToggleModal = () => {
-    bottomSheetModalRef2?.current?.present();
-    setOpacity(0.2);
-  };
 
   const handleAdd = () => {
     setDataInput({
@@ -453,15 +485,22 @@ const ThucHienChecklist = ({ navigation }) => {
     });
   };
 
-  const handleChecklistDetail = (id1, id2, id3, id4) => {
-    navigation.navigate("Thực hiện khu vực", {
-      ID_ChecklistC: id1,
-      ID_KhoiCV: id2,
-      ID_ThietLapCa: id3,
-      ID_Hangmucs: id4,
-    });
+  const handleChecklistDetail = async (id1, id2, id3, id4) => {
+    if (isConnected) {
+      navigation.navigate("Thực hiện khu vực", {
+        ID_ChecklistC: id1,
+        ID_KhoiCV: id2,
+        ID_ThietLapCa: id3,
+        ID_Hangmucs: id4,
+      });
 
-    setNewActionCheckList([]);
+      setNewActionCheckList([]);
+    } else {
+      Alert.alert(
+        "Không có kết nối mạng",
+        "Vui lòng kiểm tra kết nối mạng của bạn."
+      );
+    }
   };
 
   const handleCloseChecklist = async (ID_ChecklistC) => {
@@ -606,6 +645,7 @@ const ThucHienChecklist = ({ navigation }) => {
                           keyExtractor={(item, index) => index.toString()}
                           scrollEventThrottle={16}
                           scrollEnabled={true}
+                          showsVerticalScrollIndicator={false}
                         />
                       ) : (
                         <View
@@ -644,6 +684,12 @@ const ThucHienChecklist = ({ navigation }) => {
                 // }}
                 onRequestClose={handleClosePopUp}
               >
+                <CustomAlertModal
+                  isVisible={isModalVisible}
+                  title="PMC Thông báo"
+                  message={<RenderHTML contentWidth={300} source={{ html: message }} />} // Sử dụng RenderHTML
+                  onConfirm={() => setIsModalVisible(false)}
+                />
                 <View style={styles.centeredView}>
                   <View
                     style={[
@@ -722,7 +768,14 @@ const ThucHienChecklist = ({ navigation }) => {
                           handleChecklistClose(newActionCheckList[0])
                         }
                       >
-                        <Feather name="lock" size={26} color="white" />
+                        {/* <Feather name="lock" size={26} color="white" /> */}
+                        <Image
+                          source={require("../../../assets/icons/ic_lock.png")}
+                          style={{
+                            tintColor: "white",
+                            resizeMode: "contain",
+                          }}
+                        />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.button]}
@@ -735,15 +788,32 @@ const ThucHienChecklist = ({ navigation }) => {
                           )
                         }
                       >
-                        <Feather name="unlock" size={26} color="white" />
+                        {/* <Feather name="unlock" size={26} color="white" /> */}
+                        <Image
+                          source={require("../../../assets/icons/ic_unlock.png")}
+                          style={{
+                            tintColor: "white",
+                            resizeMode: "contain",
+                          }}
+                        />
                       </TouchableOpacity>
 
-                      <TouchableOpacity
+                      {/* chưa dùng */}
+                      <View style={{height: 50, width: 50}}>
+
+                      </View>
+                      {/* <TouchableOpacity
                         style={styles.button}
                         onPress={() => handleToggleModal()}
                       >
-                        <Feather name="camera" size={26} color="white" />
-                      </TouchableOpacity>
+                        <Image
+                          source={require("../../../assets/icons/ic_camera.png")}
+                          style={{
+                            tintColor: "white",
+                            resizeMode: "contain",
+                          }}
+                        />
+                      </TouchableOpacity> */}
                     </>
                   )}
                 </View>

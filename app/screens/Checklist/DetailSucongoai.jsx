@@ -23,6 +23,7 @@ import { Provider, useDispatch, useSelector } from "react-redux";
 import adjust from "../../adjust";
 import moment from "moment";
 import { COLORS, SIZES } from "../../constants/theme";
+import { funcBaseUri_Image, getImageUrls } from "../../utils/util";
 
 const DetailSucongoai = ({ navigation, route }) => {
   const data = route.params.data;
@@ -41,8 +42,19 @@ const DetailSucongoai = ({ navigation, route }) => {
     setIsShowImage(true);
     setDataImage(img);
   };
-  
-    const [isLoading, setIsLoading] = useState(true);
+
+  // const getImageUrls = (item) => {
+  //   console.log('item', item)
+  //   if (!item) return null;
+  //   return item.endsWith(".jpg")
+  //     ? funcBaseUri_Image(3, item.trim())
+  //     : `https://drive.google.com/thumbnail?id=${item.trim()}&sz=w1000`;
+  // };
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  console.log("data", data);
+  console.log("imagesHandle", imagesHandle);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -78,7 +90,7 @@ const DetailSucongoai = ({ navigation, route }) => {
                         width: "100%",
                       }}
                       source={{
-                        uri: `https://drive.google.com/thumbnail?id=${dataImage}&sz=w1000`,
+                        uri: getImageUrls(3, dataImage),
                       }}
                       onLoadStart={() => setIsLoading(true)}
                       onLoadEnd={() => setIsLoading(false)}
@@ -118,7 +130,9 @@ const DetailSucongoai = ({ navigation, route }) => {
                         <View style={styles.action}>
                           <TextInput
                             allowFontScaling={false}
-                            value={data?.ent_hangmuc?.Hangmuc || "Chưa có hạng mục"}
+                            value={
+                              data?.ent_hangmuc?.Hangmuc || "Chưa có hạng mục"
+                            }
                             editable={false}
                             placeholder="Hạng mục"
                             placeholderTextColor="gray"
@@ -133,6 +147,54 @@ const DetailSucongoai = ({ navigation, route }) => {
                           />
                         </View>
                       </View>
+                      <View style={{ width: "100%" }}>
+                        <Text allowFontScaling={false} style={styles.text}>
+                          Người gửi
+                        </Text>
+
+                        <View style={styles.action}>
+                          <TextInput
+                            allowFontScaling={false}
+                            value={`${data?.ent_user?.Hoten} - ${data?.ent_user?.ent_chucvu?.Chucvu}`}
+                            editable={false}
+                            placeholder="Hạng mục"
+                            placeholderTextColor="gray"
+                            style={{
+                              paddingLeft: 12,
+                              color: "#05375a",
+                              width: "75%",
+                              fontSize: adjust(16),
+                              height: adjust(50),
+                            }}
+                            pointerEvents="none"
+                          />
+                        </View>
+                      </View>
+                      {data?.ID_Handler != null && (
+                        <View style={{ width: "100%" }}>
+                          <Text allowFontScaling={false} style={styles.text}>
+                            Người xử lý
+                          </Text>
+
+                          <View style={styles.action}>
+                            <TextInput
+                              allowFontScaling={false}
+                              value={`${data?.ent_handler?.Hoten} - ${data?.ent_handler?.ent_chucvu?.Chucvu}`}
+                              editable={false}
+                              placeholder="Hạng mục"
+                              placeholderTextColor="gray"
+                              style={{
+                                paddingLeft: 12,
+                                color: "#05375a",
+                                width: "75%",
+                                fontSize: adjust(16),
+                                height: adjust(50),
+                              }}
+                              pointerEvents="none"
+                            />
+                          </View>
+                        </View>
+                      )}
                       <View style={{ width: "100%" }}>
                         <Text allowFontScaling={false} style={styles.text}>
                           Ngày giờ sự cố
@@ -193,8 +255,8 @@ const DetailSucongoai = ({ navigation, route }) => {
                               styles.textInput,
                               {
                                 paddingHorizontal: 10,
-                                height: 100,
-                                justifyContent: "flex-start",
+                                height: 70,
+                                textAlignVertical: "top",
                               },
                             ]}
                             autoCapitalize="sentences"
@@ -216,7 +278,7 @@ const DetailSucongoai = ({ navigation, route }) => {
                             <View>
                               <Image
                                 source={{
-                                  uri: `https://drive.google.com/thumbnail?id=${item}&sz=w1000`,
+                                  uri: getImageUrls(3, item),
                                 }}
                                 style={{
                                   width: 100,
@@ -273,16 +335,17 @@ const DetailSucongoai = ({ navigation, route }) => {
                                 style={[
                                   styles.textInput,
                                   {
+                                    height: 70,
                                     paddingHorizontal: 10,
-                                    height: 100,
-                                    justifyContent: "flex-start",
+                                    paddingLeft: 10,
+                                    textAlignVertical: "top",
                                   },
                                 ]}
                                 autoCapitalize="sentences"
                               />
                             </View>
                           </View>
-                          {imagesHandle.length > 1 && (
+                          {imagesHandle.length > 0 && (
                             <View style={{ width: "100%" }}>
                               <Text
                                 allowFontScaling={false}
@@ -301,7 +364,7 @@ const DetailSucongoai = ({ navigation, route }) => {
                                   <View>
                                     <Image
                                       source={{
-                                        uri: `https://drive.google.com/thumbnail?id=${item}&sz=w1000`,
+                                        uri: getImageUrls(3, item),
                                       }}
                                       style={{
                                         width: 100,

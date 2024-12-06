@@ -27,61 +27,90 @@ const ModalPopupDetailChecklist = ({
   dataItem,
   index,
   handleItemClick,
+  handleClearBottom,
+  user,
 }) => {
   const ref = useRef(null);
   const [step, setStep] = useState(1);
   const [defaultChecklist, setDefaultChecklist] = useState(
     dataItem?.valueCheck
   );
-  const [image, setImage] = useState();
+  const [images, setImages] = useState([]);
   const [ghichu, setGhichu] = useState();
   const [chiso, setChiso] = useState();
+  let newImageItem = []
 
   const pickImage = async () => {
-    // Ask the user for the permission to access the camera
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (permissionResult.granted === false) {
-      alert("You've refused to allow this appp to access your camera!");
+      alert("You've refused to allow this app to access your camera!");
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync();
-    if (!result.canceled) {
-      dataItem.Anh = result?.assets[0];
-      handleItemClick(result?.assets[0], "option", "Anh", dataItem);
-      setImage(result?.assets[0]);
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const newImage = result?.assets[0];
+        setImages((prevImages) => [...prevImages, newImage]); // Thêm ảnh mới vào danh sách
+        newImageItem = [...images, newImage];
+        handleItemClick(newImageItem, "option", "Anh", dataItem);
+      }
+    } catch (error) {
+      console.error("Error capturing image: ", error);
     }
   };
 
-  const objData = {
-    Anh: image,
-    GhichuChitiet: ghichu,
-    valueCheck: null,
+  const removeImage = (indexToRemove) => {
+    setImages((prevImages) =>
+      prevImages.filter((_, index) => index !== indexToRemove)
+    );
+    const filterImages = images.filter((_, index) => index !== indexToRemove);
+    // Cập nhật dataItem sau khi xóa ảnh
+    handleItemClick(filterImages, "option", "Anh", dataItem);
   };
+
+  const objData = {
+    Anh: images,
+    GhichuChitiet: ghichu,
+    valueCheck: defaultChecklist || chiso,
+  };
+
 
   const setData = () => {
     dataItem.valueCheck = defaultChecklist || chiso;
-    dataItem.Anh = image ? image : null;
-    dataItem.GhichuChitiet = ghichu ? ghichu : "";
-    objData.Anh = image ? image : null;
-    objData.GhichuChitiet = ghichu ? ghichu : "";
+    dataItem.Anh = images;
+    dataItem.GhichuChitiet = ghichu || "";
+    objData.Anh = images;
+    objData.GhichuChitiet = ghichu || "";
     objData.valueCheck = defaultChecklist || chiso;
   };
 
   useEffect(() => {
-    setImage(dataItem?.Anh);
+    setImages(dataItem?.Anh || []);
     setGhichu(dataItem?.GhichuChitiet);
     setChiso(dataItem?.valueCheck);
   }, [dataItem]);
 
+  const close = () => {
+    handleClearBottom();
+  };
+
   return (
     <GestureHandlerRootView style={{ height: "auto" }}>
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <ScrollView
-          style={{ width: SIZES.width, paddingHorizontal: 20, height: "auto" }}
+        <View
+          style={{
+            width: SIZES.width * 0.8,
+            height: "auto",
+            justifyContent: "center",
+            alignContent: "center",
+          }}
         >
-          {step === 1 &&
+          {step == 1 &&
             (`${dataItem?.isCheck}` === "0" ? (
               <View>
                 <Text allowFontScaling={false} style={styles.text}>
@@ -89,7 +118,11 @@ const ModalPopupDetailChecklist = ({
                 </Text>
                 <SelectDropdown
                   ref={ref}
-                  data={dataItem?.Giatrinhan ? dataItem?.Giatrinhan : []}
+                  data={
+                    dataItem?.Giatrinhan
+                      ? dataItem?.Giatrinhan.map((it) => it.trim())
+                      : []
+                  }
                   buttonStyle={styles.select}
                   dropdownStyle={{
                     borderRadius: 8,
@@ -100,14 +133,14 @@ const ModalPopupDetailChecklist = ({
                   buttonTextStyle={styles.customText}
                   defaultValue={defaultChecklist}
                   onSelect={(selectedItem, i) => {
-                    dataItem.valueCheck = selectedItem;
+                    dataItem.valueCheck = selectedItem.trim();
                     handleItemClick(
-                      selectedItem,
+                      selectedItem.trim(),
                       "option",
                       "valueCheck",
                       dataItem
                     );
-                    setDefaultChecklist(selectedItem);
+                    setDefaultChecklist(selectedItem.trim());
                   }}
                   renderDropdownIcon={(isOpened) => {
                     return (
@@ -165,10 +198,49 @@ const ModalPopupDetailChecklist = ({
                 />
               </View>
             ))}
-          {step === 2 && (
+
+          {step == 1 && (
             <>
-              <View>
-              <View>
+              <View style={{ marginTop: 10 }}>
+                <Button
+                  onPress={() => setStep(2)}
+                  backgroundColor={COLORS.bg_white}
+                  border={COLORS.bg_button}
+                  color={"black"}
+                  text={"Chụp ảnh, Ghi chú"}
+                  width={"100%"}
+                />
+              </View>
+            </>
+          )}
+          {step == 1 && (
+            <View style={{ marginTop: 10 }}>
+              <Button
+                onPress={() => {
+                  setData();
+                  handleItemClick(objData, "close", objData, dataItem);
+                  close();
+                }}
+                backgroundColor={COLORS.bg_button}
+                border={COLORS.bg_button}
+                color={"white"}
+                text={"Hoàn thành"}
+                width={"100%"}
+              />
+            </View>
+          )}
+          {step == 2 && (
+            <>
+              <View
+                style={{
+                  width: SIZES.width * 0.8,
+                  height: "auto",
+                  justifyContent: "center",
+                  alignContent: "center",
+                  // padding
+                }}
+              >
+                <View>
                   <Text allowFontScaling={false} style={styles.text}>
                     Ghi chú
                   </Text>
@@ -186,148 +258,103 @@ const ModalPopupDetailChecklist = ({
                       styles.textInput,
                       {
                         paddingHorizontal: 10,
-                        height: 80,
+                        height: 70,
+                        textAlignVertical: 'top',
                       },
                     ]}
                   />
                 </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    width: "100%",
-                  }}
-                >
-                  <View>
+                <View>
                   <Text allowFontScaling={false} style={styles.text}>
                     Chụp ảnh
                   </Text>
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: "white",
-                      padding: SIZES.padding,
-                      borderRadius: SIZES.borderRadius,
-                      borderColor: COLORS.bg_button,
-                      borderWidth: 1,
-                      width: 80,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: 80,
-                    }}
-                    onPress={pickImage}
-                  >
-                    <Entypo name="camera" size={24} color="black" />
-                  </TouchableOpacity>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 20,
-                    }}
-                  >
-                    {image && (
-                      <Image
-                        source={{ uri: image?.uri }}
-                        style={styles.image}
-                      />
-                    )}
-                    {image && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setImage(null);
-                          handleItemClick(null, "option", "Anh", dataItem);
-                        }}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        <AntDesign
-                          name="delete"
-                          size={adjust(22)}
-                          color="black"
-                        />
-                        <Text
-                          allowFontScaling={false}
-                          style={{ fontSize: adjust(16), fontWeight: "600" }}
-                        >
-                          Xóa
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                  <View style={{ flexDirection: "row", marginBottom: 5 }}>
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "white",
+                        padding: SIZES.padding,
+                        borderRadius: SIZES.borderRadius,
+                        borderColor: COLORS.bg_button,
+                        borderWidth: 1,
+                        width: 60,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: 60,
+                      }}
+                      onPress={() => pickImage()}
+                    >
+                      <Entypo name="camera" size={15} color="black" />
+                    </TouchableOpacity>
+                    <ScrollView horizontal>
+                      {images.map((img, index) => (
+                        <View key={index} style={{ marginLeft: 10 }}>
+                          <Image
+                            source={{ uri: img.uri }}
+                            style={{
+                              width: 100,
+                              height: 140,
+                              position: "relative",
+                              opacity: 0.8,
+                            }}
+                          />
+                          <TouchableOpacity
+                            style={{
+                              position: "absolute",
+                              top: 40,
+                              left: 30,
+                              width: 50,
+                              height: 50,
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                            onPress={() => removeImage(index)}
+                          >
+                            <FontAwesome
+                              name="remove"
+                              size={adjust(30)}
+                              color="white"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </ScrollView>
                   </View>
                 </View>
-              
-              </View>
-              <View style={{ marginTop: 10 }}>
-                <Button
-                  onPress={() => {
-                    setData();
-                    handleItemClick(objData, "close", objData, dataItem);
-                    handlePopupClear();
-                  }}
-                  backgroundColor={COLORS.bg_button}
-                  border={COLORS.bg_button}
-                  color={"white"}
-                  text={"Hoàn thành"}
-                  width={"100%"}
-                />
+                <View style={{ marginTop: 10 }}>
+                  <Button
+                    onPress={() => {
+                      setData();
+                      handleItemClick(objData, "close", objData, dataItem);
+                      close();
+                    }}
+                    backgroundColor={COLORS.bg_button}
+                    border={COLORS.bg_button}
+                    color={"white"}
+                    text={"Hoàn thành"}
+                    width={"100%"}
+                  />
+                </View>
               </View>
             </>
           )}
 
-          {step === 1 && (
-            <>
-              <View style={{ marginTop: 10 }}>
-                <Button
-                  onPress={() => {
-                    setStep(2);
-                  }}
-                  backgroundColor={COLORS.bg_white}
-                  border={COLORS.bg_button}
-                  color={"black"}
-                  text={"Chụp ảnh, Ghi chú"}
-                  width={"100%"}
-                />
-              </View>
-            </>
-          )}
-          {step === 1 && (
-            <View style={{ marginTop: 10 }}>
-              <Button
-                onPress={() => {
-                  setData();
-                  handleItemClick(objData, "close", objData, dataItem);
-                  handlePopupClear();
-                }}
-                backgroundColor={COLORS.bg_button}
-                border={COLORS.bg_button}
-                color={"white"}
-                text={"Hoàn thành"}
-                width={"100%"}
-              />
-            </View>
-          )}
           <View style={{ marginTop: 10 }}>
             <Button
               onPress={() => {
-                step === 1
-                  ? handlePopupClear()
+                step == 1
+                  ? close()
                   : (setStep(1),
                     setData(),
                     handleItemClick(objData, "close", objData, dataItem));
-                // handleItemClick(image, "option", "Anh", dataItem);
-                // handleItemClick(ghichu, "option", "GhichuChitiet", dataItem);
               }}
-              backgroundColor={step === 1 ? COLORS.bg_button : COLORS.bg_white}
+              backgroundColor={step == 1 ? COLORS.bg_button : COLORS.bg_white}
               border={COLORS.bg_button}
-              color={step === 1 ? "white" : "black"}
-              text={step === 1 ? "Đóng" : "Quay lại"}
+              color={step == 1 ? "white" : "black"}
+              text={step == 1 ? "Đóng" : "Quay lại"}
               width={"100%"}
             />
           </View>
-        </ScrollView>
+        </View>
       </TouchableWithoutFeedback>
     </GestureHandlerRootView>
   );
@@ -368,6 +395,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     textAlign: "left",
     paddingLeft: 10,
+    width: "100%",
   },
   image: {
     width: 150,

@@ -8,18 +8,20 @@ import {
   ActivityIndicator,
   ImageBackground,
 } from "react-native";
+import moment from 'moment';
 import { BASE_URL } from "../../constants/config";
 import axiosClient from "../../api/axiosClient";
 import { DataTable } from "react-native-paper";
+import axios from "axios";
 
 // Header của bảng với chiều rộng tương ứng
 const headerList = [
-  { til: "STT", width: 28 },
   { til: "Ngày", width: 85 },
   { til: "Kỹ thuật", width: 70 },
   { til: "Làm sạch", width: 70 },
   { til: "Dịch vụ", width: 70 },
   { til: "Bảo vệ", width: 70 },
+  { til: "F&B", width: 70 },
 ];
 
 const DanhmucThongkeDashBoard = () => {
@@ -31,7 +33,7 @@ const DanhmucThongkeDashBoard = () => {
     const handleDataPercent = async () => {
       try {
         setLoading(true); // Bắt đầu loading
-        const res = await axiosClient.get(
+        const res = await axios.get(
           `${BASE_URL}/tb_checklistc/percent-checklist-days`,
           {
             headers: {
@@ -58,6 +60,9 @@ const DanhmucThongkeDashBoard = () => {
             : "",
           "Khối bảo vệ": project.createdKhois["Khối bảo vệ"]?.completionRatio
             ? `${project.createdKhois["Khối bảo vệ"].completionRatio} %`
+            : "",
+          "Khối F&B": project.createdKhois["Khối F&B"]?.completionRatio
+            ? `${project.createdKhois["Khối F&B"].completionRatio} %`
             : "",
         }));
 
@@ -113,7 +118,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item.id}
+                        {moment(item.date).format('DD-MM-YY')}
                       </DataTable.Cell>
                       <DataTable.Cell
                         style={{
@@ -122,7 +127,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item.date}
+                        {item["Khối kỹ thuật"]}
                       </DataTable.Cell>
                       <DataTable.Cell
                         style={{
@@ -131,7 +136,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item["Khối kỹ thuật"]}
+                        {item["Khối làm sạch"]}
                       </DataTable.Cell>
                       <DataTable.Cell
                         style={{
@@ -140,7 +145,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item["Khối làm sạch"]}
+                        {item["Khối dịch vụ"]}
                       </DataTable.Cell>
                       <DataTable.Cell
                         style={{
@@ -149,7 +154,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item["Khối dịch vụ"]}
+                        {item["Khối bảo vệ"]}
                       </DataTable.Cell>
                       <DataTable.Cell
                         style={{
@@ -158,7 +163,7 @@ const DanhmucThongkeDashBoard = () => {
                           justifyContent: "center",
                         }}
                       >
-                        {item["Khối bảo vệ"]}
+                        {item["Khối F&B"]}
                       </DataTable.Cell>
                     </DataTable.Row>
                   ))}

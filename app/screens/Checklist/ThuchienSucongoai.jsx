@@ -13,6 +13,7 @@ import {
   Image,
   Alert,
   ScrollView,
+  Modal,
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -39,10 +40,12 @@ import ButtonSubmit from "../../components/Button/ButtonSubmit";
 import axios from "axios";
 import { BASE_URL } from "../../constants/config";
 import { axiosClient } from "../../api/axiosClient";
-import { nowDate } from "../../utils/util"
+import { nowDate } from "../../utils/util";
+import ModalCallSucongoai from "../../components/Modal/ModalCallSucongoai";
 
-const ThuchienSucongoai = ({ navigation }) => {
+const ThuchienSucongoai = ({ navigation, route }) => {
   const dispath = useDispatch();
+  const { userPhone } = route.params;
   const { user, authToken } = useSelector((state) => state.authReducer);
   const { ent_khuvuc, ent_khoicv, ent_toanha, ent_hangmuc } = useSelector(
     (state) => state.entReducer
@@ -51,6 +54,7 @@ const ThuchienSucongoai = ({ navigation }) => {
   const [dataKhuvuc, setDataKhuvuc] = useState([]);
   const [dataHangmuc, setDataHangmuc] = useState([]);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [isModalcall, setIsModalcall] = useState(false);
 
   const [dataInput, setDataInput] = useState({
     ID_KV_CV: null,
@@ -111,30 +115,63 @@ const ThuchienSucongoai = ({ navigation }) => {
   };
 
   const pickImage = async () => {
-    // Ask the user for the permission to access the camera
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    Alert.alert(
+      "Chọn ảnh",
+      "Bạn muốn chụp ảnh hay chọn ảnh từ thư viện?",
+      [
+        {
+          text: "Chụp ảnh",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestCameraPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng camera. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
 
-    if (permissionResult.granted === false) {
-      alert(
-        "Bạn đã từ chối cho phép được sử dụng camera. Vào cài đặt và mở lại!"
-      );
-      return;
-    }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ["images"],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      aspect: [4, 3],
-      quality: 0.5, // Adjust image quality (0 to 1)
-    });
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Chọn từ thư viện",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng thư viện. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
 
-    if (!result.canceled) {
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages, result.assets[0].uri].filter(
-          (uri) => uri
-        ); // Filter out undefined or null
-        return updatedImages;
-      });
-    }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
+
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const init_toanha = async () => {
@@ -147,9 +184,6 @@ const ThuchienSucongoai = ({ navigation }) => {
 
   const init_khuvuc = async () => {
     await dispath(ent_khuvuc_get());
-  };
-  const init_sucongoai = async () => {
-    await dispath(tb_sucongoai_get());
   };
 
   useEffect(() => {
@@ -201,12 +235,12 @@ const ThuchienSucongoai = ({ navigation }) => {
             name:
               Math.floor(Math.random() * Math.floor(99999999999999)) +
               index +
-              ".jpeg",
-            type: "image/jpeg",
+              ".jpg",
+            type: "image/jpg",
           };
 
           // Append image file to formData
-          formData.append(`Images`, file);
+          formData.append(`Images_${index}`, file);
           // formData.append(`Anh1`, file?.name);
         });
         formData.append("ID_Hangmuc", dataInput.ID_Hangmuc);
@@ -215,7 +249,7 @@ const ThuchienSucongoai = ({ navigation }) => {
         formData.append("Noidungsuco", dataInput.Noidungsuco);
         formData.append("ID_User", user.ID_User);
         formData.append("Tinhtrangxuly", 0);
-        if( dataInput.Ngaysuco == null || dataInput.Giosuco == null){
+        if (dataInput.Ngaysuco == null || dataInput.Giosuco == null) {
           Alert.alert("PMC Thông báo", "Vui lòng nhập đầy đủ thông tin", [
             {
               text: "Hủy",
@@ -277,7 +311,7 @@ const ThuchienSucongoai = ({ navigation }) => {
           ]);
           setLoadingSubmit(false);
           resetDataInput();
-        } else if (data.Ngaysuco > nowDate()){
+        } else if (data.Ngaysuco > nowDate()) {
           Alert.alert("PMC Thông báo", "Ngày không hợp lệ", [
             {
               text: "Hủy",
@@ -747,8 +781,8 @@ const ThuchienSucongoai = ({ navigation }) => {
                               <TouchableOpacity
                                 style={{
                                   position: "absolute",
-                                  top: 40,
-                                  left: 30,
+                                  top: 45,
+                                  left: 25,
                                   width: 50,
                                   height: 50,
                                   justifyContent: "center",
@@ -756,10 +790,9 @@ const ThuchienSucongoai = ({ navigation }) => {
                                 }}
                                 onPress={() => handleRemoveImage(item)}
                               >
-                                <FontAwesome
-                                  name="remove"
-                                  size={adjust(30)}
-                                  color="white"
+                                <Image
+                                  source={require("../../../assets/icons/ic_close.png")}
+                                  style={styles.closeIcon}
                                 />
                               </TouchableOpacity>
                             </View>
@@ -772,17 +805,54 @@ const ThuchienSucongoai = ({ navigation }) => {
                     </View>
                   </View>
 
-                  <View>
+                  <View style={{ marginBottom: 10 }}>
+                    <TouchableOpacity onPress={() => setIsModalcall(true)}>
+                      <View
+                        style={{ alignItems: "flex-end", marginBottom: 10 }}
+                      >
+                        <Image
+                          source={require("../../../assets/icons/ic_phone.png")}
+                          style={{
+                            width: adjust(80) * 0.8,
+                            height: adjust(80) * 0.8,
+                            resizeMode: "contain",
+                          }}
+                        />
+                      </View>
+                    </TouchableOpacity>
                     <ButtonSubmit
                       text="Gửi"
                       onPress={() => handleSubmit()}
                       isLoading={loadingSubmit}
                       backgroundColor={COLORS.bg_button}
                       color="white"
-                      width="100"
+                      width="100%"
                     />
                   </View>
                 </View>
+
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={isModalcall}
+                  onRequestClose={() => {
+                    setIsModalcall(false);
+                  }}
+                >
+                  <View style={styles.centeredView}>
+                    <View
+                      style={[
+                        styles.modalView,
+                        { width: "80%", height: "70%" },
+                      ]}
+                    >
+                      <ModalCallSucongoai
+                        userPhone={userPhone}
+                        setIsModalcall={setIsModalcall}
+                      />
+                    </View>
+                  </View>
+                </Modal>
               </ScrollView>
             </ImageBackground>
           </BottomSheetModalProvider>
@@ -879,5 +949,28 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: "center",
     marginVertical: 10,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalView: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 4,
+    // alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeIcon: {
+    tintColor: "white",
   },
 });

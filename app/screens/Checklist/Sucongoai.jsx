@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
+import * as ImagePicker from "expo-image-picker";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -32,16 +33,13 @@ import { BASE_URL } from "../../constants/config";
 import moment from "moment";
 import axiosClient from "../../api/axiosClient";
 import { formatDate } from "../../utils/util";
-import * as ImagePicker from "expo-image-picker";
+
 
 const Sucongoai = ({ navigation }) => {
   const dispath = useDispatch();
 
   const { user, authToken } = useSelector((state) => state.authReducer);
   const { tb_sucongoai } = useSelector((state) => state.tbReducer);
-  const { ent_khuvuc, ent_khoicv, ent_toanha, ent_hangmuc } = useSelector(
-    (state) => state.entReducer
-  );
 
   const [dataSuCoNgoai, setDataSuCoNgoai] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -216,14 +214,6 @@ const Sucongoai = ({ navigation }) => {
     setIsBottomSheetOpen(false);
   };
 
-  // useEffect(() => {
-  //   if (changeStatus?.status3) {
-  //     setModalHeight(550);
-  //   } else if(changeStatus.status2){
-  //     setModalHeight(350);
-  //   }
-  // }, [changeStatus]);
-
   useEffect(() => {
     let height = 300;
     if (hangmuc === undefined) {
@@ -240,21 +230,6 @@ const Sucongoai = ({ navigation }) => {
 
     setModalHeight(height);
   }, [hangmuc, changeStatus]);
-
-  // const handleChangeHeight = (status,val) => {
-  //   if (status === "status3" && val == true) {
-  //     setModalHeight(modalHeight + 200);
-  //   } else if (status === "status3" && val == false){
-  //     setModalHeight(modalHeight - 200)
-  //   }
-  //   // else{
-  //   //   setModalHeight(modalHeight)
-  //   // }
-
-  //   if(status === "status2" && val == true){
-  //     setModalHeight(modalHeight + 200);
-  //   }
-  // };
 
   const handleChangeText = (key, value) => {
     setDataInput((data) => ({
@@ -280,30 +255,64 @@ const Sucongoai = ({ navigation }) => {
     setImages(images.filter((image) => image !== item));
   };
 
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+  const pickImageCheck = () => {
+    Alert.alert(
+      "Chọn ảnh",
+      "Bạn muốn chụp ảnh hay chọn ảnh từ thư viện?",
+      [
+        {
+          text: "Chụp ảnh",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestCameraPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng camera. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
 
-    if (permissionResult.granted === false) {
-      alert(
-        "Bạn đã từ chối cho phép được sử dụng camera. Vào cài đặt và mở lại!"
-      );
-      return;
-    }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      aspect: [4, 3],
-      quality: 0.5, // Adjust image quality (0 to 1)
-    });
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Chọn từ thư viện",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng thư viện. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
 
-    if (!result.canceled) {
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages, result.assets[0].uri].filter(
-          (uri) => uri
-        ); // Filter out undefined or null
-        return updatedImages;
-      });
-    }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
+
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleSubmitStatus = async () => {
@@ -403,8 +412,8 @@ const Sucongoai = ({ navigation }) => {
         name:
           Math.floor(Math.random() * Math.floor(99999999999999)) +
           index +
-          ".jpeg",
-        type: "image/jpeg",
+          ".jpg",
+        type: "image/jpg",
       };
 
       formData.append(`Images`, file);
@@ -621,7 +630,7 @@ const Sucongoai = ({ navigation }) => {
                           handleSubmitStatusImage={handleSubmitStatusImage}
                           images={images}
                           handleRemoveImage={handleRemoveImage}
-                          pickImage={pickImage}
+                          pickImage={pickImageCheck}
                           dataInput={dataInput}
                           handleChangeText={handleChangeText}
                           resetDataInput={resetDataInput}

@@ -32,6 +32,7 @@ import * as Notifications from "expo-notifications";
 import { BASE_URL } from "../../constants/config";
 import ItemHome from "../../components/Item/ItemHome";
 import adjust from "../../adjust";
+import ReportContext from "../../context/ReportContext";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -108,59 +109,90 @@ async function registerForPushNotificationsAsync() {
 const dataDanhMuc = [
   {
     id: 1,
+    status: null,
     path: "Thực hiện Checklist",
     icon: require("../../../assets/icons/o-01.png"),
   },
   {
     id: 2,
+    status: null,
     path: "Tra cứu",
     icon: require("../../../assets/icons/o-02.png"),
   },
+
   {
     id: 3,
+    status: null,
     path: "Checklist Lại",
     icon: require("../../../assets/icons/o-01.png"),
   },
   {
     id: 4,
+    status: null,
     path: "Xử lý sự cố",
     icon: require("../../../assets/icons/o-04.png"),
+  },
+  {
+    id: 5,
+    status: "new",
+    path: "Báo cáo chỉ số",
+    icon: require("../../../assets/icons/o-05.png"),
   },
 ];
 
 const dataGD = [
   {
     id: 1,
-    path: "Thông báo sự cố",
+    status: null,
+    // path: "Thông báo sự cố",
+    path: "Xử lý sự cố",
     icon: require("../../../assets/icons/o-04.png"),
   },
   {
     id: 2,
+    status: null,
     path: "Tra cứu",
     icon: require("../../../assets/icons/o-02.png"),
+  },
+  {
+    id: 5,
+    status: "new",
+    path: "Báo cáo chỉ số",
+    icon: require("../../../assets/icons/o-05.png"),
   },
 ];
 
 const dataKST = [
   {
     id: 1,
+    status: null,
     path: "Thực hiện Checklist",
     icon: require("../../../assets/icons/o-01.png"),
   },
   {
     id: 2,
+    status: null,
     path: "Tra cứu",
     icon: require("../../../assets/icons/o-02.png"),
   },
   {
+    id: 4,
+    status: null,
+    path: "Checklist Lại",
+    icon: require("../../../assets/icons/o-01.png"),
+  },
+
+  {
     id: 3,
+    status: null,
     path: "Xử lý sự cố",
     icon: require("../../../assets/icons/o-04.png"),
   },
   {
-    id: 4,
-    path: "Thông báo sự cố",
-    icon: require("../../../assets/icons/o-04.png"),
+    id: 5,
+    status: "new",
+    path: "Báo cáo chỉ số",
+    icon: require("../../../assets/icons/o-05.png"),
   },
 ];
 
@@ -168,12 +200,20 @@ const dataKST = [
 const HomeScreen = ({ navigation }) => {
   const dispath = useDispatch();
   const { user, authToken } = useSelector((state) => state.authReducer);
+  const { setShowReport, showReport } = useContext(ReportContext);
+
   const [expoPushToken, setExpoPushToken] = useState("");
   const [notification, setNotification] = useState(undefined);
   const notificationListener = useRef();
   const responseListener = useRef();
+
   const renderItem = ({ item, index }) => (
-    <ItemHome ID_Chucvu={user?.ID_Chucvu} item={item} index={index} />
+    <ItemHome
+      ID_Chucvu={user?.ID_Chucvu}
+      item={item}
+      index={index}
+      showReport={showReport}
+    />
   );
 
   const int_khuvuc = async () => {
@@ -248,11 +288,26 @@ const HomeScreen = ({ navigation }) => {
             },
           }
         )
-        .then((response) => console.log("response"))
+        .then((response) => {})
         .catch((err) => console.log("err device", err));
     };
     dataRes();
   }, [authToken]);
+
+  // useEffect(() => {
+  //   const dataRes = async () => {
+  //     await axios
+  //       .post(BASE_URL + "/date", {
+  //         ID_Duan: user.ID_Duan
+  //       })
+  //       .then((response) => {
+  //         setShowReport(response.data.data);
+  //       })
+  //       .catch((err) => console.log("err device", err));
+  //   };
+  //   dataRes();
+  // }, [authToken]);
+  // console.log('show', showReport)
 
   return (
     <ImageBackground
@@ -262,9 +317,9 @@ const HomeScreen = ({ navigation }) => {
     >
       <View style={styles.container}>
         <View style={styles.content}>
-          {user.ent_duan.Logo ? (
+          {user?.ent_duan?.Logo ? (
             <Image
-              source={{ uri: user.ent_duan.Logo }}
+              source={{ uri: user?.ent_duan?.Logo }}
               resizeMode="contain"
               style={{ height: adjust(70), width: adjust(180) }}
             />
@@ -274,7 +329,6 @@ const HomeScreen = ({ navigation }) => {
               resizeMode="contain"
               style={{ height: adjust(80), width: adjust(200) }}
             />
-            // <Text>Hello</Text>
           )}
           <Text
             allowFontScaling={false}
@@ -316,13 +370,21 @@ const HomeScreen = ({ navigation }) => {
               paddingHorizontal: 20,
             }}
             numColumns={2}
-            data={
-              user.ID_Chucvu === 4
-                ? dataDanhMuc
-                : user.ID_Chucvu === 2
-                ? dataGD
-                : dataKST
-            }
+            data={(() => {
+              const baseData =
+                user?.ent_chucvu?.Role == 3
+                  ? dataDanhMuc
+                  : user?.ent_chucvu?.Role == 1
+                  ? dataGD
+                  : user?.ent_chucvu?.Role == 2 && dataKST;
+
+              // Kiểm tra showReport.show để lọc dữ liệu
+              // return showReport?.show
+              //   ? baseData
+              //   : baseData?.filter((item) => item.path !== "Báo cáo chỉ số");
+
+                return baseData
+            })()}
             renderItem={renderItem}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             contentContainerStyle={{ gap: 10 }}
@@ -356,7 +418,6 @@ const HomeScreen = ({ navigation }) => {
             Giám đốc Tòa nhà toàn quyền sử dụng.
           </Text>
         </View>
-       
       </View>
     </ImageBackground>
   );

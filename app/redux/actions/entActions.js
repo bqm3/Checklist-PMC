@@ -353,7 +353,7 @@ export const ent_users_get = () => {
   };
 };
 
-export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC) => {
+export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC, ID_KhoiCV) => {
   
   return async (dispatch) => {
     dispatch({
@@ -369,7 +369,7 @@ export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC) => {
       if (token !== null) {
         const response = await axios.put(
           `${BASE_URL}/ent_checklist/filter-mul/${ID_ChecklistC}/${ID_Calv}`,
-          { dataHangmuc: dataHangmuc },
+          { dataHangmuc: dataHangmuc, ID_KhoiCV: ID_KhoiCV },
           {
             headers: {
               Accept: "application/json",
@@ -381,11 +381,21 @@ export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC) => {
         const processedData = data?.map((item) => {
           return {
             ...item,
-            Giatrinhan: item?.Giatrinhan?.split("/"),
+            Giatrinhan: item?.Giatrinhan?.split("/").map((item) => 
+              item
+            .split(" ") // Chia chuỗi thành mảng từ
+            .map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() // Viết hoa chữ cái đầu và viết thường các chữ còn lại
+            )
+            .join(" ") 
+            .trim() 
+            ),
+            Giatriloi: item?.Giatriloi ? item?.Giatriloi.split(" ").map((item) => (item?.charAt(0).toUpperCase() + item.slice(1).toLowerCase())).join(" ").trim() : null,
             valueCheck: null,
             GhichuChitiet: "",
             ID_ChecklistC: ID_ChecklistC,
             Anh: null,
+            isScan: null,
             Gioht: moment().format("LTS"),
           };
         });
@@ -438,11 +448,12 @@ export const ent_checklist_mul_hm_return = (dataHangmuc, ID_Calv, ID_ChecklistC)
         const processedData = data?.map((item) => {
           return {
             ...item,
-            Giatrinhan: item?.Giatrinhan?.split("/"),
+            Giatrinhan: item?.Giatrinhan?.split("/").map((item) => item.trim()),
             valueCheck: null,
             GhichuChitiet: "",
             ID_ChecklistC: ID_ChecklistC,
             Anh: null,
+            isScan: null,
             Gioht: moment().format("LTS"),
           };
         });

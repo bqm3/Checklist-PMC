@@ -15,6 +15,7 @@ import {
   TouchableHighlight,
   Alert,
   BackHandler,
+  Image,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
@@ -33,6 +34,7 @@ import moment from "moment";
 import axiosClient from "../../api/axiosClient";
 import { formatDate } from "../../utils/util";
 import * as ImagePicker from "expo-image-picker";
+
 const XulySuco = ({ navigation }) => {
   const dispath = useDispatch();
 
@@ -48,6 +50,7 @@ const XulySuco = ({ navigation }) => {
   const [modalHeight, setModalHeight] = useState(350);
   const [images, setImages] = useState([]);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [userPhone, setUserPhone] = useState([]);
   const hangmuc = newActionClick[0]?.ent_hangmuc?.Hangmuc;
 
   const [dataInput, setDataInput] = useState({
@@ -55,11 +58,13 @@ const XulySuco = ({ navigation }) => {
     Noidungghichu: "",
     Duongdancacanh: [],
   });
+
   const [changeStatus, setChangeStatus] = useState({
     status1: false,
     status2: false,
     status3: false,
   });
+
   const [ngayXuLy, setNgayXuLy] = useState({
     date: moment(new Date()).format("DD-MM-YYYY"),
     isCheck: false,
@@ -77,11 +82,13 @@ const XulySuco = ({ navigation }) => {
       [key]: value,
     }));
   };
-
   useEffect(() => {
-    setLoading(true);
-    init_sucongoai();
-  }, []);
+    const unsubscribe = navigation.addListener("focus", () => {
+      init_sucongoai();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const handleChangeStatus = (key, val) => {
     setChangeStatus((prevStatus) => {
@@ -106,6 +113,16 @@ const XulySuco = ({ navigation }) => {
         : null
     );
   };
+
+  useEffect(() => {
+    setLoading(true);
+    if (tb_sucongoai) {
+      setDataSuCoNgoai(tb_sucongoai);
+      setLoading(false);
+    }
+    setLoading(false);
+  }, [tb_sucongoai]);
+
   useEffect(() => {
     const backAction = () => {
       if (isBottomSheetOpen) {
@@ -122,15 +139,6 @@ const XulySuco = ({ navigation }) => {
 
     return () => backHandler.remove();
   }, [isBottomSheetOpen, opacity]);
-
-  useEffect(() => {
-    setLoading(true);
-    if (tb_sucongoai) {
-      setDataSuCoNgoai(tb_sucongoai);
-      setLoading(false);
-    }
-    setLoading(false);
-  }, [tb_sucongoai]);
 
   const toggleTodo = async (item, index) => {
     // setIsCheckbox(true);
@@ -154,14 +162,37 @@ const XulySuco = ({ navigation }) => {
     setOpacity(0.2);
   };
 
-  // const hanldeDetailSuco = (data) => {
-  //   navigation.navigate("Chi tiết sự cố", {
-  //     data: data,
-  //   });
-  // };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/ent_user/getPhone`, {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          timeout: 10000,
+        });
+
+        setUserPhone(response.data.data);
+      } catch (error) {
+        console.error("Error fetching user phone:", error);
+        Alert.alert("PMC Thông báo", "Có lỗi xảy ra!", [
+          {
+            text: "Xác nhận",
+            onPress: () => {
+              console.log("OK Pressed");
+            },
+          },
+        ]);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const hanldeDetailSuco = async (data) => {
     try {
-      await axios
+      await axiosClient
         .get(
           BASE_URL + `/tb_sucongoai/getDetail/${newActionClick[0].ID_Suco}`,
           {
@@ -206,63 +237,6 @@ const XulySuco = ({ navigation }) => {
     setIsBottomSheetOpen(false);
   };
 
-  const handleChangeText = (key, value) => {
-    setDataInput((data) => ({
-      ...data,
-      [key]: value,
-    }));
-  };
-
-  const resetDataInput = () => {
-    setDataInput({
-      ID_Hangmuc: null,
-      Noidungsuco: "",
-      Duongdancacanh: [],
-    });
-    setChangeStatus({
-      status1: false,
-      status2: false,
-      status3: false,
-    });
-    setImages([]);
-  };
-
-  const handleRemoveImage = (item) => {
-    setImages(images.filter((image) => image !== item));
-  };
-
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      alert(
-        "Bạn đã từ chối cho phép được sử dụng camera. Vào cài đặt và mở lại!"
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      aspect: [4, 3],
-      quality: 0.5, // Adjust image quality (0 to 1)
-    });
-
-    if (!result.canceled) {
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages, result.assets[0].uri].filter(
-          (uri) => uri
-        ); // Filter out undefined or null
-        return updatedImages;
-      });
-    }
-
-    // if (result.canceled == true) {
-    //   console.log("RUN");
-    //   setImages(...prevImages,[]);
-    // }
-  };
-  //result {"assets": null, "canceled": true}
-
   useEffect(() => {
     let height = 300;
     if (hangmuc === undefined) {
@@ -279,6 +253,90 @@ const XulySuco = ({ navigation }) => {
 
     setModalHeight(height);
   }, [hangmuc, changeStatus]);
+
+  const handleChangeText = (key, value) => {
+    setDataInput((data) => ({
+      ...data,
+      [key]: value,
+    }));
+  };
+
+  const resetDataInput = () => {
+    setDataInput({
+      Noidungsuco: "",
+      Duongdancacanh: [],
+    });
+    setChangeStatus({
+      status1: false,
+      status2: false,
+      status3: false,
+    });
+    setImages([]);
+  };
+
+  const handleRemoveImage = (item) => {
+    setImages(images.filter((image) => image !== item));
+  };
+
+  const pickImage = async () => {
+    Alert.alert(
+      "Chọn ảnh",
+      "Bạn muốn chụp ảnh hay chọn ảnh từ thư viện?",
+      [
+        {
+          text: "Chụp ảnh",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestCameraPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng camera. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ["images"],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
+
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Chọn từ thư viện",
+          onPress: async () => {
+            const permissionResult =
+              await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (permissionResult.granted === false) {
+              alert(
+                "Bạn đã từ chối cho phép sử dụng thư viện. Vào cài đặt và mở lại!"
+              );
+              return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              aspect: [4, 3],
+              quality: 0.8, // Adjust image quality (0 to 1)
+            });
+
+            if (!result.canceled) {
+              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const handleSubmitStatus = async () => {
     if (saveStatus == null) {
@@ -369,6 +427,7 @@ const XulySuco = ({ navigation }) => {
         });
     }
   };
+
   const handleSubmitStatusImage = async () => {
     let formData = new FormData();
     images.map((item, index) => {
@@ -377,8 +436,8 @@ const XulySuco = ({ navigation }) => {
         name:
           Math.floor(Math.random() * Math.floor(99999999999999)) +
           index +
-          ".jpeg",
-        type: "image/jpeg",
+          ".jpg",
+        type: "image/jpg",
       };
 
       formData.append(`Images`, file);
@@ -510,6 +569,31 @@ const XulySuco = ({ navigation }) => {
               style={{ flex: 1, width: "100%" }}
             >
               <View style={[styles.container, { opacity: opacity }]}>
+                <View style={styles.header}>
+                  <View></View>
+                  <TouchableOpacity
+                    style={styles.action}
+                    onPress={() =>
+                      navigation.navigate("Thực hiện sự cố ngoài", {
+                        userPhone: userPhone,
+                      })
+                    }
+                  >
+                    <Image
+                      source={require("../../../assets/icons/ic_plus.png")}
+                      style={styles.closeIcon}
+                    />
+                    <Text
+                      style={{
+                        fontSize: adjust(16),
+                        color: "white",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Sự cố{" "}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.content}>
                   {dataSuCoNgoai.length > 0 && loading === false && (
                     <FlatList
@@ -525,6 +609,7 @@ const XulySuco = ({ navigation }) => {
                           newActionClick={newActionClick}
                         />
                       )}
+                      showsVerticalScrollIndicator={false}
                       scrollEventThrottle={16}
                       ListFooterComponent={<View style={{ height: 80 }} />}
                       scrollEnabled={true}
@@ -547,9 +632,6 @@ const XulySuco = ({ navigation }) => {
                 animationType="slide"
                 transparent={true}
                 visible={modalVisible}
-                // onRequestClose={() => {
-                //   setModalVisible(!modalVisible);
-                // }}
                 onRequestClose={() => {
                   handleCloseTinhTrang();
                 }}
@@ -559,13 +641,13 @@ const XulySuco = ({ navigation }) => {
                   style={{ flex: 1 }}
                   keyboardVerticalOffset={
                     Platform.OS === "ios" && modalVisible ? 0 : 0
-                  }
+                  } // Adjust the offset if needed
                 >
                   <View style={styles.centeredView}>
                     <View
                       style={[
                         styles.modalView,
-                        { width: "80%", height: modalHeight, minHeight: 350 },
+                        { width: "80%", minHeight: modalHeight },
                       ]}
                     >
                       <View style={styles.contentContainer}>
@@ -594,6 +676,7 @@ const XulySuco = ({ navigation }) => {
                   </View>
                 </KeyboardAvoidingView>
               </Modal>
+
               {newActionClick?.length > 0 && (
                 <View
                   style={{
@@ -614,10 +697,7 @@ const XulySuco = ({ navigation }) => {
                         styles.button,
                         { backgroundColor: COLORS.bg_red },
                       ]}
-                      onPress={() => {
-                        handleChangeTinhTrang(newActionClick[0]),
-                          setSaveStatus();
-                      }}
+                      onPress={() => handleChangeTinhTrang(newActionClick[0])}
                     >
                       <Feather name="repeat" size={26} color="white" />
                     </TouchableOpacity>
@@ -645,13 +725,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "column",
-    marginTop: 12,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    margin: 12,
   },
   action: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 3,
   },
   button: {
     backgroundColor: COLORS.color_bg,
@@ -686,5 +770,8 @@ const styles = StyleSheet.create({
     fontSize: adjust(20),
     fontWeight: "600",
     paddingVertical: 10,
+  },
+  closeIcon: {
+    tintColor: "white",
   },
 });

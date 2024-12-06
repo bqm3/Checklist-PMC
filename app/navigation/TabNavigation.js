@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Pressable,
+  View,
 } from "react-native";
 import {
   ThucHienChecklist,
@@ -16,13 +18,20 @@ import {
   DetailChecklist,
   Profile,
   DanhmucChecklist,
-  DanhmucTracuuVsThongke,
   ChecklistLaiScreen,
   ThuchienKhuvucLai,
   DetailCheckListCa,
   ThucHienHangmucLai,
   DetailChecklistLai,
+  ScanKhuVuc,
+  ScanHangMuc,
 } from "../screens/Checklist";
+import {
+  DanhmucTracuuVsThongke,
+  NotKhuVuc,
+  NotHangMuc,
+  NotCheckList,
+} from "../screens/TraCuuThongKe";
 import { COLORS } from "../constants/theme";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import DanhmucToanhaScreen from "../screens/PSH/DanhmucToanhaScreen";
@@ -37,17 +46,31 @@ import Sucongoai from "../screens/Checklist/Sucongoai";
 import ThuchienSucongoai from "../screens/Checklist/ThuchienSucongoai";
 import DetailSucongoai from "../screens/Checklist/DetailSucongoai";
 import XulySuco from "../screens/Checklist/XulySuco";
+import DanhMucBaoCaoChiSo from "../screens/Baocaochiso/DanhMucBaoCaoChiSo";
+import BaoCaoChiSoTheoNamThang from "../screens/Baocaochiso/BaoCaoChiSoTheoNamThang";
+import DanhmucHangMucChiSo from "../screens/Baocaochiso/DanhmucHangMucChiSo";
 
 const Stack = createNativeStackNavigator();
 
 const Back = ({ navigation, title }) => {
   return (
     <TouchableOpacity
-      onPress={() =>
-        title ? navigation.navigate("Profile") : navigation.goBack()
-      }
+      style={{ backgroundColor: "red", width: adjust(40), height: adjust(40) }}
+      onPressIn={() => {
+        console.log("vao day");
+        title ? navigation.navigate("Profile") : navigation.goBack();
+      }}
     >
-      <FontAwesome5 name="user-alt" size={adjust(28)} color="white" />
+      {/* <FontAwesome5 name="user-alt" size={adjust(28)} color="white" /> */}
+
+      <Image
+        source={require("../../assets/icons/ic_person.png")}
+        style={{
+          width: adjust(40),
+          height: adjust(40),
+          tintColor: "white",
+        }}
+      />
     </TouchableOpacity>
   );
 };
@@ -79,11 +102,30 @@ const HomeStack = ({ navigation }) => {
                 color: "white",
               }}
             >
-              CHECKLIST
+              PMC Checklist
             </Text>
           ),
           headerTitleAlign: "center",
-          headerRight: () => <Back navigation={navigation} title={"Profile"} />,
+          headerRight: () => (
+            <TouchableOpacity
+              style={{
+                width: adjust(36),
+                height: adjust(36),
+              }}
+              onPressIn={() => {
+                navigation.navigate("Profile");
+              }}
+            >
+              <Image
+                source={require("../../assets/icons/ic_person.png")}
+                style={{
+                  width: adjust(36),
+                  height: adjust(36),
+                  tintColor: "white",
+                }}
+              />
+            </TouchableOpacity>
+          ),
         })}
       />
 
@@ -107,9 +149,101 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Scan khu vực"
+        component={ScanKhuVuc}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Khu vực checklist
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Scan hạng mục"
+        component={ScanHangMuc}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Hạng mục không quét QrCode
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -141,9 +275,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -174,9 +316,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -208,9 +358,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -242,9 +400,58 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+      <Stack.Screen
+        name="Báo cáo chỉ số"
+        component={DanhMucBaoCaoChiSo}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Báo cáo chỉ số
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -276,9 +483,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -289,6 +504,49 @@ const HomeStack = ({ navigation }) => {
           headerBackTitleVisible: false,
         })}
       />
+
+      <Stack.Screen
+        name="Hạng mục chưa checklist"
+        component={NotHangMuc}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Hạng mục chưa checklist
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
       <Stack.Screen
         name="Thực hiện hạng mục lại"
         component={ThucHienHangmucLai}
@@ -309,9 +567,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -329,6 +595,7 @@ const HomeStack = ({ navigation }) => {
         lazy={false}
         options={({ navigation, route }) => ({
           headerShown: true,
+          gestureEnabled: false,
           headerTitle: () => (
             <Text
               allowFontScaling={false}
@@ -343,22 +610,46 @@ const HomeStack = ({ navigation }) => {
           ),
           headerLeft: () => (
             <TouchableOpacity
-              onPress={() => {
-                Alert.alert(
-                  "PMC",
-                  "Thoát khỏi khu vực sẽ mất hết checklist đã kiểm tra. Vui lòng xác nhận",
-                  [
-                    {
-                      text: "Hủy",
-                      onPress: () => console.log("Hủy Pressed"),
-                      style: "cancel",
-                    },
-                    {
-                      text: "Xác nhận",
-                      onPress: () => navigation.goBack(),
-                    },
-                  ]
-                );
+              onPressIn={() => {
+                navigation.goBack();
+              }}
+            >
+              {Platform.OS === "ios" && (
+                <Ionicons name="chevron-back" size={28} color="white" />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button, // Replace with your color
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Khu vực chưa checklist"
+        component={NotKhuVuc}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+          gestureEnabled: false,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: 20, // Adjust font size as needed
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Khu vực chưa checklist
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPressIn={() => {
+                navigation.goBack();
               }}
             >
               {Platform.OS === "ios" && (
@@ -394,9 +685,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -428,9 +727,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -461,9 +768,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -494,9 +809,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -528,9 +851,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -557,12 +888,105 @@ const HomeStack = ({ navigation }) => {
                 fontWeight: "700",
                 color: "white",
               }}
-            ></Text>
+            >
+              Sự cố ngoài
+            </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Báo cáo chỉ số tháng năm"
+        component={BaoCaoChiSoTheoNamThang}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Báo cáo {route?.params?.data?.monthYear}
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Hạng mục chỉ số"
+        component={DanhmucHangMucChiSo}
+        lazy={false}
+        options={({ navigation, route }) => ({
+          headerShown: true,
+
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Hạng mục chỉ số
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -589,12 +1013,22 @@ const HomeStack = ({ navigation }) => {
                 fontWeight: "700",
                 color: "white",
               }}
-            ></Text>
+            >
+              Xử lý sự cố
+            </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -624,9 +1058,17 @@ const HomeStack = ({ navigation }) => {
             ></Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -658,9 +1100,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -692,9 +1142,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -726,9 +1184,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -759,9 +1225,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -793,9 +1267,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -826,9 +1308,58 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
+              )}
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: true,
+        })}
+      />
+
+      <Stack.Screen
+        name="Checklist chưa kiểm tra"
+        component={NotCheckList}
+        lazy={false}
+        options={({ route, navigation }) => ({
+          headerShown: true,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Checklist chưa kiểm tra
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
+              {Platform.OS === "ios" && (
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),
@@ -839,6 +1370,7 @@ const HomeStack = ({ navigation }) => {
           headerBackTitleVisible: false,
         })}
       />
+
       <Stack.Screen
         name="Chi tiết Checklist lại"
         component={DetailChecklistLai}
@@ -858,9 +1390,17 @@ const HomeStack = ({ navigation }) => {
             </Text>
           ),
           headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPressIn={() => navigation.goBack()}>
               {Platform.OS === "ios" && (
-                <Ionicons name="chevron-back" size={adjust(28)} color="white" />
+                <Image
+                  source={require("../../assets/icons/ic_button_back.png")}
+                  resizeMode="contain"
+                  style={{
+                    height: adjust(22),
+                    width: adjust(22),
+                    tintColor: "white",
+                  }}
+                />
               )}
             </TouchableOpacity>
           ),

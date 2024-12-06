@@ -6,11 +6,9 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from "react-native";
-import DanhmucTracuuContent from "./DanhmucTracuuContent";
-import DanhmucThongkeContent from "./DanhmucThongkeContent";
 import { COLORS } from "../../constants/theme";
-import { WebView } from "react-native-webview";
 import DanhmucThongkeDashBoard from "./DanhmucThongkeDashboard";
+import DanhmucTraCuu from "./DanhmucTraCuu";
 
 const TabButtons = ({
   tabButtonType,
@@ -49,17 +47,12 @@ const DanhmucTracuuVsThongke = ({ route, navigation }) => {
   const [opacity, setOpacity] = useState(1);
 
   const TabButtonType = [{ title: "Tra cứu" }, { title: "Thống kê" }];
-  const injectedJavaScript = `
-  document.getElementById('username').value = 'admin'; 
-  document.getElementById('password').value = '123'; 
-  document.querySelector('form').submit(); 
-`;
+  
   const renderContent = () => {
     switch (selectedTab) {
       case "Tra cứu":
         return (
-          //<DanhmucTracuuContent opacity={opacity} setOpacity={setOpacity} navigation />
-          <DanhmucThongkeContent
+          <DanhmucTraCuu
             opacity={opacity}
             setOpacity={setOpacity}
             navigation={navigation}
@@ -67,16 +60,7 @@ const DanhmucTracuuVsThongke = ({ route, navigation }) => {
         );
       case "Thống kê":
         return (
-        //   <WebView
-        //   style={{ flex: 1 }}
-        //   source={{ uri: "https://demo.pmcweb.vn" }}
-        //   // injectedJavaScript={injectedJavaScript}
-        //   onMessage={(event) => {
-        //     console.log(event.nativeEvent.data);
-        //   }}
-        // />
-          //<DanhmucThongkeContent opacity={opacity} setOpacity={setOpacity} navigation = {navigation}/>
-          <DanhmucThongkeDashBoard></DanhmucThongkeDashBoard>
+          <DanhmucThongkeDashBoard />
         );
       default:
         return (
@@ -139,6 +123,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 16,
     color: "#666",
+    fontWeight: "bold",
   },
   selectedTabText: {
     color: "#fff",
