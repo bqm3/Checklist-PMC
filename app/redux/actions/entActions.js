@@ -228,50 +228,6 @@ export const ent_checklist_get = (pag) => {
   };
 };
 
-export const ent_checklist_get_detail = (ID_KhoiCV, ID_ChecklistC, ID_Calv, ID_Hangmuc) => {
-  return async (dispatch) => {
-    dispatch({
-      type: type.SET_ENT_CHECKLIST_STATE,
-      payload: {
-        ent_checklist_detail: [],
-        isLoading: true
-      },
-    });
-    try {
-      const token = await AsyncStorage.getItem("tokenUser");
-      
-      if (token !== null) {
-        const response = await axios.get(
-          BASE_URL + `/ent_checklist/${ID_KhoiCV}/${ID_ChecklistC}/${ID_Calv}/${ID_Hangmuc}`,
-          {
-            headers: {
-              Accept: "application/json",
-              Authorization: "Bearer " + token,
-            },
-          }
-        );
-        const data = response.data.data;
-        dispatch({
-          type: type.SET_ENT_CHECKLIST_DETAIL_SUCCESS,
-          payload: {
-            ent_checklist_detail: data,
-            isLoading: false
-          },
-        });
-      } 
-    } catch (err) {
-      dispatch({
-        type: type.SET_ENT_CHECKLIST_FAIL,
-        payload: {
-          ent_checklist_detail: [],
-          isLoading: false
-        },
-      });
-      console.log("ent_checklist_get_detail 1", err.response);
-    }
-  };
-};
-
 export const ent_tang_get = () => {
   return async (dispatch) => {
     try {
@@ -353,8 +309,7 @@ export const ent_users_get = () => {
   };
 };
 
-export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC, ID_KhoiCV) => {
-  
+export const ent_checklist_mul_hm = (ID_Hangmucs, ID_Calv, ID_ChecklistC, ID_KhoiCV) => {
   return async (dispatch) => {
     dispatch({
       type: type.SET_ENT_CHECKLIST_STATE,
@@ -364,12 +319,13 @@ export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC, ID_Kho
       },
     });
     try {
+     
       const token = await AsyncStorage.getItem("tokenUser");
-      
+
       if (token !== null) {
         const response = await axios.put(
           `${BASE_URL}/ent_checklist/filter-mul/${ID_ChecklistC}/${ID_Calv}`,
-          { dataHangmuc: dataHangmuc, ID_KhoiCV: ID_KhoiCV },
+          { ID_KhoiCV: ID_KhoiCV, dataHangmuc: ID_Hangmucs },
           {
             headers: {
               Accept: "application/json",
@@ -415,7 +371,7 @@ export const ent_checklist_mul_hm = (dataHangmuc, ID_Calv, ID_ChecklistC, ID_Kho
           isLoading: false
         },
       });
-      console.log("ent_checklist_get_detail 2", err.response);
+      console.log("ent_checklist_get_detail 2", err.response.data.message);
     }
   };
 }
@@ -432,7 +388,6 @@ export const ent_checklist_mul_hm_return = (dataHangmuc, ID_Calv, ID_ChecklistC)
     });
     try {
       const token = await AsyncStorage.getItem("tokenUser");
-      
       if (token !== null) {
         const response = await axios.put(
           `${BASE_URL}/ent_checklist/filter-return/${ID_ChecklistC}/${ID_Calv}`,
@@ -477,3 +432,30 @@ export const ent_checklist_mul_hm_return = (dataHangmuc, ID_Calv, ID_ChecklistC)
     }
   };
 }
+
+export const check_hsse = () => {
+  return async (dispatch) => {
+    try {
+      const token = await AsyncStorage.getItem("tokenUser");
+      if (token !== null) {
+        const response = await axios.post(BASE_URL + "/hsse/check",[], {
+          headers: {
+            Accept: "application/json",
+            Authorization: "Bearer " + token,
+          },
+        });
+        const data = response.data.data;
+        dispatch({
+          type: type.SET_CHECK_HSSE_SUCCESS,
+          payload: {
+            data_check_hsse: data,
+          },
+        });
+      } else {
+        console.error("initialized error");
+      }
+    } catch (err) {
+      console.log("err", err);
+    }
+  };
+};

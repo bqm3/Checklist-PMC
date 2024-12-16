@@ -26,7 +26,7 @@ import adjust from "../../adjust";
 import { Camera } from "expo-camera";
 import { Linking } from "react-native";
 
-const ThucHienHangmuc = ({ route, navigation }) => {
+const ThucHienHangmucLai = ({ route, navigation }) => {
   const { ID_ChecklistC, ID_KhoiCV, ID_Khuvuc, Tenkv } = route.params;
   const {
     dataChecklists,
@@ -68,7 +68,7 @@ const ThucHienHangmuc = ({ route, navigation }) => {
         (item) => item.MaQrCode.trim().toLowerCase() === cleanedValue
       );
       if (resData?.length >= 1) {
-        navigation.navigate("Chi tiết Checklist", {
+        navigation.navigate("Chi tiết Checklist lại", {
           ID_ChecklistC: ID_ChecklistC,
           ID_KhoiCV: ID_KhoiCV,
           ID_Hangmuc: resData[0].ID_Hangmuc,
@@ -152,7 +152,7 @@ const ThucHienHangmuc = ({ route, navigation }) => {
   };
 
   const handleSubmit = () => {
-    navigation.navigate("Chi tiết Checklist", {
+    navigation.navigate("Chi tiết Checklist lại", {
       ID_ChecklistC: ID_ChecklistC,
       ID_KhoiCV: ID_KhoiCV,
       ID_Hangmuc: dataSelect[0].ID_Hangmuc,
@@ -458,7 +458,7 @@ const ThucHienHangmuc = ({ route, navigation }) => {
   );
 };
 
-export default ThucHienHangmuc;
+export default ThucHienHangmucLai;
 
 const styles = StyleSheet.create({
   container: {

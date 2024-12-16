@@ -36,9 +36,8 @@ const NotKhuVuc = ({ route, navigation }) => {
   const {
     setDataChecklists,
     dataHangmuc,
-    hangMuc,
-    setHangMuc,
-    setStepKhuvuc,
+    hangMucFilter,
+    setHangMucFilter,
     dataChecklists,
     HangMucDefault,
   } = useContext(DataContext);
@@ -64,7 +63,6 @@ const NotKhuVuc = ({ route, navigation }) => {
     const ID_HangmucsArray = Array.isArray(ID_Hangmucs)
       ? ID_Hangmucs
       : ID_Hangmucs.split(",").map(Number);
-    setStepKhuvuc(1);
 
     // Kiểm tra xem mảng ent_khuvuc có dữ liệu không
     if (ent_khuvuc && ent_khuvuc.length > 0) {
@@ -113,7 +111,7 @@ const NotKhuVuc = ({ route, navigation }) => {
         });
 
       // Cập nhật trạng thái hangMuc với danh sách đã lọc
-      setHangMuc(finalFilteredData);
+      setHangMucFilter(finalFilteredData);
       setDataKhuvuc(filteredHangMuc);
       setDataFilterHandler(finalFilteredData);
     }

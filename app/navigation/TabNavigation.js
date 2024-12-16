@@ -10,67 +10,74 @@ import {
   Pressable,
   View,
 } from "react-native";
+import { COLORS } from "../constants/theme";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import adjust from '../adjust'
 import {
   ThucHienChecklist,
-  HomeScreen,
-  DanhmucCalamviec,
-  DanhmucKhuvuc,
   DetailChecklist,
-  Profile,
-  DanhmucChecklist,
-  ChecklistLaiScreen,
-  ThuchienKhuvucLai,
-  DetailCheckListCa,
+  ThucHienHangmuc,
+  ThucHienKhuvuc,
+} from "../screens/Checklist";
+
+import {
+  ThucHienChecklistLai,
+  ThucHienKhuvucLai,
   ThucHienHangmucLai,
   DetailChecklistLai,
-  ScanKhuVuc,
-  ScanHangMuc,
-} from "../screens/Checklist";
+} from "../screens/ChecklistLai";
+
 import {
+  DanhmucToanhaScreen,
+  DanhmucUserScreen,
+  DanhmucDuanScreen,
+} from "../screens/PSH";
+
+import {
+  Sucongoai,
+  DetailSucongoai,
+  ThuchienSucongoai,
+  XulySuco,
+} from "../screens/SuCo";
+
+import {
+  DanhmucChiTietTracuu,
+  DanhmucThongKe,
   DanhmucTracuuVsThongke,
   NotKhuVuc,
   NotHangMuc,
   NotCheckList,
+  DetailCheckListCa,
+  ScanHangMuc,
+  ScanKhuVuc,
 } from "../screens/TraCuuThongKe";
-import { COLORS } from "../constants/theme";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import DanhmucToanhaScreen from "../screens/PSH/DanhmucToanhaScreen";
-import DanhmucDuanScreen from "../screens/PSH/DanhmucDuanScreen";
-import DanhmucUserScreen from "../screens/PSH/DanhmucUserScreen";
-import DanhmucHangmuc from "../screens/Checklist/DanhmucHangmuc";
-import ThucHienHangmuc from "../screens/Checklist/ThucHienHangmuc";
-import ThucHienKhuvuc from "../screens/Checklist/ThuchienKhuvuc";
-import adjust from "../adjust";
-import ChecklistHangNgay from "../screens/Checklist/ChecklistHangNgay";
-import Sucongoai from "../screens/Checklist/Sucongoai";
-import ThuchienSucongoai from "../screens/Checklist/ThuchienSucongoai";
-import DetailSucongoai from "../screens/Checklist/DetailSucongoai";
-import XulySuco from "../screens/Checklist/XulySuco";
-import DanhMucBaoCaoChiSo from "../screens/Baocaochiso/DanhMucBaoCaoChiSo";
-import BaoCaoChiSoTheoNamThang from "../screens/Baocaochiso/BaoCaoChiSoTheoNamThang";
-import DanhmucHangMucChiSo from "../screens/Baocaochiso/DanhmucHangMucChiSo";
+import {
+  BaoCaoChiSoTheoNamThang,
+  DanhMucBaoCaoChiSo,
+  DanhmucHangMucChiSo,
+} from "../screens/Baocaochiso"
+
+import { DanhMucBaoCaoHSSE, TaoBaoCaoHSSE, DetailHSSE } from "../screens/HSSE";
+import HomeScreen from '../screens/HomeScreen.jsx'
+import Profile from '../screens/Profile.jsx'
+
 
 const Stack = createNativeStackNavigator();
 
-const Back = ({ navigation, title }) => {
+const headerLeft = (navigation) => {
   return (
-    <TouchableOpacity
-      style={{ backgroundColor: "red", width: adjust(40), height: adjust(40) }}
-      onPressIn={() => {
-        console.log("vao day");
-        title ? navigation.navigate("Profile") : navigation.goBack();
-      }}
-    >
-      {/* <FontAwesome5 name="user-alt" size={adjust(28)} color="white" /> */}
-
-      <Image
-        source={require("../../assets/icons/ic_person.png")}
-        style={{
-          width: adjust(40),
-          height: adjust(40),
-          tintColor: "white",
-        }}
-      />
+    <TouchableOpacity onPressIn={() => navigation.goBack()}>
+      {Platform.OS === "ios" && (
+        <Image
+          source={require("../../assets/icons/ic_button_back.png")}
+          resizeMode="contain"
+          style={{
+            height: adjust(22),
+            width: adjust(22),
+            tintColor: "white",
+          }}
+        />
+      )}
     </TouchableOpacity>
   );
 };
@@ -148,21 +155,7 @@ const HomeStack = ({ navigation }) => {
               Chi tiết checklist ca
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -190,21 +183,7 @@ const HomeStack = ({ navigation }) => {
               Khu vực checklist
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -232,21 +211,7 @@ const HomeStack = ({ navigation }) => {
               Hạng mục không quét QrCode
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -274,21 +239,7 @@ const HomeStack = ({ navigation }) => {
               Thông tin cá nhân
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -315,63 +266,7 @@ const HomeStack = ({ navigation }) => {
               Thực hiện Checklist
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
-      {/* Checklist hàng ngày */}
-      <Stack.Screen
-        name="Checklist hàng ngày"
-        component={ChecklistHangNgay}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Thực hiện Checklist
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -382,7 +277,7 @@ const HomeStack = ({ navigation }) => {
 
       <Stack.Screen
         name="Checklist Lại"
-        component={ChecklistLaiScreen}
+        component={ThucHienChecklistLai}
         lazy={false}
         options={({ navigation, route }) => ({
           headerShown: true,
@@ -399,21 +294,7 @@ const HomeStack = ({ navigation }) => {
               Checklist Lại
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -440,21 +321,7 @@ const HomeStack = ({ navigation }) => {
               Báo cáo chỉ số
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -482,21 +349,7 @@ const HomeStack = ({ navigation }) => {
               Hạng mục theo khu vực
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -524,21 +377,7 @@ const HomeStack = ({ navigation }) => {
               Hạng mục chưa checklist
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -566,21 +405,7 @@ const HomeStack = ({ navigation }) => {
               Hạng mục theo khu vực lại
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -667,7 +492,7 @@ const HomeStack = ({ navigation }) => {
 
       <Stack.Screen
         name="Thực hiện khu vực lại"
-        component={ThuchienKhuvucLai}
+        component={ThucHienKhuvucLai}
         lazy={false}
         options={({ navigation, route }) => ({
           headerShown: true,
@@ -681,148 +506,10 @@ const HomeStack = ({ navigation }) => {
                 color: "white",
               }}
             >
-              Khu vực
+              Khu vực lại
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Danh mục Hạng mục"
-        component={DanhmucHangmuc}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Hạng mục
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
-      <Stack.Screen
-        name="Danh mục Khu vực"
-        component={DanhmucKhuvuc}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Danh mục Khu vực
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
-      <Stack.Screen
-        name="Danh mục Check list"
-        component={DanhmucChecklist}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Danh mục Check list
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -850,21 +537,7 @@ const HomeStack = ({ navigation }) => {
               Thông báo sự cố ngoài
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -892,21 +565,7 @@ const HomeStack = ({ navigation }) => {
               Sự cố ngoài
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -933,21 +592,7 @@ const HomeStack = ({ navigation }) => {
               Báo cáo {route?.params?.data?.monthYear}
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -975,21 +620,7 @@ const HomeStack = ({ navigation }) => {
               Hạng mục chỉ số
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1017,21 +648,7 @@ const HomeStack = ({ navigation }) => {
               Xử lý sự cố
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1057,21 +674,7 @@ const HomeStack = ({ navigation }) => {
               }}
             ></Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1080,89 +683,7 @@ const HomeStack = ({ navigation }) => {
         })}
       />
 
-      <Stack.Screen
-        name="Danh mục Ca làm việc"
-        component={DanhmucCalamviec}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Danh mục Ca làm việc
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="Danh mục tòa nhà"
-        component={DanhmucToanhaScreen}
-        lazy={false}
-        options={({ navigation, route }) => ({
-          headerShown: true,
-
-          headerTitle: () => (
-            <Text
-              allowFontScaling={false}
-              style={{
-                fontSize: adjust(20),
-                fontWeight: "700",
-                color: "white",
-              }}
-            >
-              Danh mục tòa nhà
-            </Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
-          headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: COLORS.bg_button,
-          },
-          headerBackTitleVisible: false,
-        })}
-      />
+    
 
       <Stack.Screen
         name="Quản lý người dùng"
@@ -1183,21 +704,7 @@ const HomeStack = ({ navigation }) => {
               Quản lý người dùng
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1224,21 +731,7 @@ const HomeStack = ({ navigation }) => {
               Danh mục dự án
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1266,21 +759,7 @@ const HomeStack = ({ navigation }) => {
               Thống kê và tra cứu
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1307,21 +786,7 @@ const HomeStack = ({ navigation }) => {
               Chi tiết Checklist
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1348,21 +813,7 @@ const HomeStack = ({ navigation }) => {
               Checklist chưa kiểm tra
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
-          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
@@ -1389,21 +840,102 @@ const HomeStack = ({ navigation }) => {
               Chi tiết Checklist lại
             </Text>
           ),
-          headerLeft: () => (
-            <TouchableOpacity onPressIn={() => navigation.goBack()}>
-              {Platform.OS === "ios" && (
-                <Image
-                  source={require("../../assets/icons/ic_button_back.png")}
-                  resizeMode="contain"
-                  style={{
-                    height: adjust(22),
-                    width: adjust(22),
-                    tintColor: "white",
-                  }}
-                />
-              )}
-            </TouchableOpacity>
+          headerLeft: () => headerLeft(navigation),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Báo cáo HSSE"
+        component={DanhMucBaoCaoHSSE}
+        lazy={false}
+        options={({ route, navigation }) => ({
+          headerShown: true,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Dữ liệu HSSE
+            </Text>
           ),
+          headerLeft: () => headerLeft(navigation),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Tạo báo cáo HSSE"
+        component={TaoBaoCaoHSSE}
+        lazy={false}
+        options={({ route, navigation }) => ({
+          headerShown: true,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Tạo báo cáo HSSE
+            </Text>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity onPressIn={() => navigation.navigate("Báo cáo HSSE", { isReload: true })}>
+            {Platform.OS === "ios" && (
+              <Image
+                source={require("../../assets/icons/ic_button_back.png")}
+                resizeMode="contain"
+                style={{
+                  height: adjust(22),
+                  width: adjust(22),
+                  tintColor: "white",
+                }}
+              />
+            )}
+          </TouchableOpacity>
+          ),
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: COLORS.bg_button,
+          },
+          headerBackTitleVisible: false,
+        })}
+      />
+
+      <Stack.Screen
+        name="Chi tiết dữ liệu HSSE"
+        component={DetailHSSE}
+        lazy={false}
+        options={({ route, navigation }) => ({
+          headerShown: true,
+          headerTitle: () => (
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                fontWeight: "700",
+                color: "white",
+              }}
+            >
+              Chi tiết dữ liệu ngày {route?.params?.data?.Ngay_ghi_nhan}
+            </Text>
+          ),
+          headerLeft: () => headerLeft(navigation),
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: COLORS.bg_button,
