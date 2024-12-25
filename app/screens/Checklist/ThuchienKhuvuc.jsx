@@ -16,13 +16,17 @@ import {
   Linking,
   RefreshControl,
 } from "react-native";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Camera } from "expo-camera";
 import React, { useState, useEffect, useContext } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ent_checklist_mul_hm } from "../../redux/actions/entActions";
+import {
+  ent_checklist_mul_hm,
+  ent_checklist_mul_hm_return,
+} from "../../redux/actions/entActions";
 import { COLORS, SIZES } from "../../constants/theme";
 import Button from "../../components/Button/Button";
 import axios from "axios";
@@ -47,22 +51,27 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     hangMucFilterByIDChecklistC,
     khuVucFilterByIDChecklistC,
     setKhuVucFilterByIDChecklistC,
-    hangMucByKhuVuc,
+    setHangMucByKhuVuc,
+    dataChecklistByCa,
+    setDataChecklistByCa,
   } = useContext(DataContext);
   const { setDataChecklistFilterContext, dataChecklistFilterContext } =
     useContext(ChecklistContext);
 
   const dispath = useDispatch();
-  const { ent_khuvuc, ent_checklist_detail, ent_hangmuc } = useSelector(
-    (state) => state.entReducer
-  );
+  const {
+    ent_khuvuc,
+    ent_checklist_detail,
+    ent_checklist_detail_return,
+    ent_hangmuc,
+  } = useSelector((state) => state.entReducer);
   const { isConnect, saveConnect } = useContext(ConnectContext);
 
   const { user, authToken } = useSelector((state) => state.authReducer);
 
   const [opacity, setOpacity] = useState(1);
   const [submit, setSubmit] = useState(false);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [isScan, setIsScan] = useState(false);
   const [modalVisibleQr, setModalVisibleQr] = useState(false);
@@ -82,6 +91,16 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (isLoadingDetail) {
+      const timer = setTimeout(() => {
+        setIsLoadingDetail(false);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingDetail]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (e) => {
@@ -115,7 +134,9 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
   // Call API Checklist còn theo ID_ChecklistC
   const init_checklist = async () => {
-    await dispath(ent_checklist_mul_hm(ID_Hangmucs, ID_Calv, ID_ChecklistC, ID_KhoiCV));
+    await dispath(
+      ent_checklist_mul_hm(ID_Hangmucs, ID_Calv, ID_ChecklistC, ID_KhoiCV)
+    );
   };
 
   useEffect(() => {
@@ -176,7 +197,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         }
       } catch (error) {
         // Handle any errors that occur
-        console.log("Error fetching network status 123:", error);
+        console.log("Error fetching network status:", error);
         setSubmit(false);
       }
     };
@@ -187,9 +208,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      setIsLoadingDetail(true);
       init_checklist();
-      setIsLoadingDetail(false);
       return () => {};
     }, [dispath])
   );
@@ -208,9 +227,31 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     }
   };
 
+  const init_checklist_return = async () => {
+    await dispath(
+      ent_checklist_mul_hm_return(ID_Hangmucs, ID_Calv, ID_ChecklistC)
+    );
+  };
+
   useEffect(() => {
     loadData();
   }, [ent_checklist_detail]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      init_checklist_return();
+      return () => {};
+    }, [dispath])
+  );
+
+  // Tải lại dữ liệu khi vào lại trang
+  const loadDataReturn = async () => {
+    setDataChecklistByCa(ent_checklist_detail_return);
+  };
+
+  useEffect(() => {
+    loadDataReturn();
+  }, [ent_checklist_detail_return]);
 
   useEffect(() => {
     const dataChecklistAction = dataChecklistFilterContext?.filter(
@@ -234,84 +275,61 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     setDataChecklistFaild(dataChecklistActionWithoutDefault);
   }, [dataChecklistFilterContext]);
 
-  const handlePushDataFilterQr = async (value) => {
+  const handlePushDataFilterQr = (value) => {
     const cleanedValue = value.trim().toLowerCase();
+    const resDataKhuvuc = dataChecklists.filter(
+      (item) => item.ent_khuvuc.MaQrCode.trim().toLowerCase() === cleanedValue
+    );
 
-    try {
-      const resDataKhuvuc = khuVucFilterByIDChecklistC.filter(
-        (item) => item.MaQrCode.trim().toLowerCase() === cleanedValue
-      );
-      const resDataHangmuc = hangMucFilterByIDChecklistC.filter(
-        (item) => item.MaQrCode.trim().toLowerCase() === cleanedValue
-      );
+    const resDataKhuvucAll = dataChecklistByCa.filter(
+      (item) => item.ent_khuvuc.MaQrCode.trim().toLowerCase() === cleanedValue
+    );
 
-      if (resDataHangmuc.length >= 1) {
-        navigation.navigate("Chi tiết Checklist", {
-          ID_ChecklistC: ID_ChecklistC,
-          ID_KhoiCV: ID_KhoiCV,
-          ID_Calv: ID_Calv,
-          hangMucFilterByIDChecklistC: hangMucFilterByIDChecklistC,
-          Hangmuc: resDataHangmuc[0],
-          ID_Hangmuc: resDataHangmuc[0].ID_Hangmuc,
-        });
-      } else if (resDataKhuvuc.length >= 1) {
-        navigation.navigate("Thực hiện hạng mục", {
-          ID_ChecklistC: ID_ChecklistC,
-          ID_KhoiCV: ID_KhoiCV,
-          ID_Calv: ID_Calv,
-          ID_Khuvuc: resDataKhuvuc[0].ID_Khuvuc,
-          ID_Hangmucs: ID_Hangmucs,
-        });
-      } else if (resDataKhuvuc.length === 0 && resDataHangmuc.length === 0) {
-        Alert.alert(
-          "PMC Thông báo",
-          `Khu vực hoặc hạng mục có qrcode: "${cleanedValue}" không thuộc ca làm việc hoặc đã kiểm tra`,
-          [
-            {
-              text: "Hủy",
-              onPress: () => console.log("Cancel Pressed"),
-              style: "cancel",
-            },
-            { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-          ]
-        );
-      }
-      setIsScan(false);
-      setModalVisibleQr(false);
-      setOpacity(1);
-    } catch (error) {
-      if (error.response) {
-        // Lỗi từ phía server (có response từ server)
-        Alert.alert("PMC Thông báo", error.response.data.message, [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      } else if (error.request) {
-        // Lỗi không nhận được phản hồi từ server
-        Alert.alert("PMC Thông báo", "Không nhận được phản hồi từ máy chủ", [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      } else {
-        // Lỗi khi cấu hình request
-        Alert.alert("PMC Thông báo", "Lỗi khi gửi yêu cầu", [
-          {
-            text: "Hủy",
-            onPress: () => console.log("Cancel Pressed"),
-            style: "cancel",
-          },
-          { text: "Xác nhận", onPress: () => console.log("OK Pressed") },
-        ]);
-      }
+    const resDataHangmuc = dataChecklists.filter(
+      (item) => item.ent_hangmuc.MaQrCode.trim().toLowerCase() === cleanedValue
+    );
+
+    const resDataHangmucAll = dataChecklistByCa.filter(
+      (item) => item.ent_hangmuc.MaQrCode.trim().toLowerCase() === cleanedValue
+    );
+
+    if (resDataKhuvuc?.length === 0 && resDataHangmuc?.length === 0) {
+      const alertMessage =
+        resDataKhuvucAll.length >= 1 || resDataHangmucAll.length >= 1
+          ? `Khu vực hoặc hạng mục có QR code: "${cleanedValue}" này đã kiểm tra`
+          : `Khu vực hoặc hạng mục có QR code: "${cleanedValue}" này không thuộc ca làm việc`;
+
+      Alert.alert("PMC Thông báo", alertMessage, [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xác nhận" },
+      ]);
     }
+
+    if (resDataKhuvuc.length >= 1) {
+      navigation.navigate("Thực hiện hạng mục", {
+        ID_ChecklistC,
+        ID_KhoiCV,
+        ID_Calv,
+        ID_Khuvuc: resDataKhuvuc[0].ID_Khuvuc,
+        ID_Hangmucs,
+      });
+    }
+
+    if (resDataHangmuc.length >= 1) {
+      setHangMucByKhuVuc(resDataHangmuc);
+      navigation.navigate("Chi tiết Checklist", {
+        ID_ChecklistC,
+        ID_KhoiCV,
+        ID_Calv,
+        hangMucFilterByIDChecklistC,
+        Hangmuc: resDataHangmuc[0],
+        ID_Hangmuc: resDataHangmuc[0].ID_Hangmuc,
+      });
+    }
+
+    setIsScan(false);
+    setModalVisibleQr(false);
+    setOpacity(1);
   };
 
   const handleSubmitChecklist = async () => {
@@ -400,8 +418,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         ]);
       } else {
         // Iterate over all items in dataChecklistFaild
-        dataChecklistFaild.forEach((item, index) => {
-          // Extract and append checklist details to formData
+        for (const [index, item] of dataChecklistFaild.entries()) {
           formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
@@ -411,30 +428,39 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           formData.append("Vido", item.Vido || "");
           formData.append("Kinhdo", item.Kinhdo || "");
           formData.append("Docao", item.Docao || "");
-          formData.append("isScan", item.isScan || null);
+          formData.append("isScan", isScan || null);
 
-          // If there is an image, append it to formData
           if (item.Anh && Array.isArray(item.Anh)) {
-            item.Anh.forEach((image, imgIndex) => {
-              const file = {
-                uri:
+            for (const [imgIndex, image] of item.Anh.entries()) {
+              try {
+                const resizedImage = await ImageManipulator.manipulateAsync(
                   Platform.OS === "android"
                     ? image.uri
                     : image.uri.replace("file://", ""),
-                name:
-                  image.fileName ||
-                  `${Math.floor(Math.random() * 999999999)}_${
-                    item.ID_Checklist
-                  }_${imgIndex}.jpg`,
-                type: "image/jpg",
-              };
-              formData.append(
-                `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
-                file
-              );
-            });
+                  [{ resize: { width: image.width * 0.6 } }], 
+                  { compress: 1, format: ImageManipulator.SaveFormat.PNG } 
+                );
+
+                const file = {
+                  uri: resizedImage.uri,
+                  name:
+                    image.fileName ||
+                    `${Math.floor(Math.random() * 9999999)}_${
+                      item.ID_Checklist
+                    }_${imgIndex}.png`,
+                  type: "image/png",
+                };
+
+                formData.append(
+                  `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
+                  file
+                );
+              } catch (error) {
+                console.error("Error resizing image: ", error);
+              }
+            }
           }
-        });
+        }
 
         // Send the entire FormData in a single request
         await axios
@@ -575,40 +601,51 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         ]);
       } else {
         // Lặp qua từng phần tử trong dataChecklistFaild để thêm vào FormData
-        dataChecklistFaild.forEach((item, index) => {
+        for (const [index, item] of dataChecklistFaild.entries()) {
           formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
           formData.append("Ketqua", item.valueCheck || "");
           formData.append("Gioht", item.Gioht);
           formData.append("Ghichu", item.GhichuChitiet || "");
-          formData.append("Vido", item?.Vido || null);
-          formData.append("Kinhdo", item?.Kinhdo || null);
-          formData.append("Docao", item?.Docao || null);
-          formData.append("isScan", item.isScan || null);
+          formData.append("Vido", item.Vido || "");
+          formData.append("Kinhdo", item.Kinhdo || "");
+          formData.append("Docao", item.Docao || "");
+          formData.append("isScan", isScan || null);
 
-          // Nếu có hình ảnh, thêm vào FormData
           if (item.Anh && Array.isArray(item.Anh)) {
-            item.Anh.forEach((image, imgIndex) => {
-              const file = {
-                uri:
+            // Use a for...of loop to wait for asynchronous tasks
+            for (const [imgIndex, image] of item.Anh.entries()) {
+              try {
+                // Resize và nén ảnh trước khi append vào formData
+                const resizedImage = await ImageManipulator.manipulateAsync(
                   Platform.OS === "android"
                     ? image.uri
                     : image.uri.replace("file://", ""),
-                name:
-                  image.fileName ||
-                  `${Math.floor(Math.random() * 999999999)}_${
-                    item.ID_Checklist
-                  }_${imgIndex}.jpg`,
-                type: "image/jpg",
-              };
-              formData.append(
-                `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
-                file
-              );
-            });
+                  [{ resize: { width: image.width * 0.6 } }], // Resize nhỏ hơn 50%
+                  { compress: 1, format: ImageManipulator.SaveFormat.PNG } // Nén ảnh
+                );
+
+                const file = {
+                  uri: resizedImage.uri,
+                  name:
+                    image.fileName ||
+                    `${Math.floor(Math.random() * 9999999)}_${
+                      item.ID_Checklist
+                    }_${imgIndex}.png`,
+                  type: "image/png",
+                };
+
+                formData.append(
+                  `Images_${index}_${item.ID_Checklist}_${imgIndex}`,
+                  file
+                );
+              } catch (error) {
+                console.error("Error resizing image: ", error);
+              }
+            }
           }
-        });
+        }
         // Tạo các yêu cầu API
         const requestFaild = axios.post(
           `${BASE_URL}/tb_checklistchitiet/create`,
@@ -730,7 +767,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           });
       }
     } catch (error) {
-      console.log("error", error);
       setLoadingSubmit(false);
       Alert.alert(
         "PMC Thông báo",

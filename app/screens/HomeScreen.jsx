@@ -14,7 +14,10 @@ import {
   ImageBackground,
   Image,
   Platform,
+  ActivityIndicator,
+  TextInput,
 } from "react-native";
+import * as Device from "expo-device";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import {
   ent_calv_get,
@@ -25,8 +28,9 @@ import {
   ent_khoicv_get,
   check_hsse,
 } from "../redux/actions/entActions";
+import SelectDropdown from "react-native-select-dropdown";
+import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import { Alert, Linking } from "react-native";
-import * as Device from "expo-device";
 import Constants from "expo-constants";
 import axios from "axios";
 import * as Notifications from "expo-notifications";
@@ -34,6 +38,10 @@ import { BASE_URL } from "../constants/config";
 import ItemHome from "../components/Item/ItemHome";
 import adjust from "../adjust";
 import ReportContext from "../context/ReportContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { login } from "../redux/actions/authActions";
+import { COLORS } from "../constants/theme";
+import ExpoTokenContext from "../context/ExpoTokenContext";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -145,6 +153,12 @@ const dataDanhMuc = [
     path: "Báo cáo HSSE",
     icon: require("../../assets/icons/o-04.png"),
   },
+  {
+    id: 7,
+    status: "new",
+    path: "Báo cáo P0",
+    icon: require("../../assets/icons/o-04.png"),
+  },
 ];
 
 const dataGD = [
@@ -170,6 +184,12 @@ const dataGD = [
     id: 5,
     status: "new",
     path: "Báo cáo chỉ số",
+    icon: require("../../assets/icons/o-04.png"),
+  },
+  {
+    id: 7,
+    status: "new",
+    path: "Báo cáo P0",
     icon: require("../../assets/icons/o-04.png"),
   },
 ];
@@ -212,17 +232,65 @@ const dataKST = [
     path: "Báo cáo HSSE",
     icon: require("../../assets/icons/o-04.png"),
   },
+  {
+    id: 7,
+    status: "new",
+    path: "Báo cáo P0",
+    icon: require("../../assets/icons/o-04.png"),
+  },
+];
+
+//ban quản trị khối
+const dataBQTKhoi = [
+  {
+    id: 2,
+    status: null,
+    path: "Tra cứu",
+    icon: require("../../assets/icons/o-02.png"),
+  },
+  {
+    id: 3,
+    status: null,
+    path: "Xử lý sự cố",
+    icon: require("../../assets/icons/o-01.png"),
+  },
+  {
+    id: 5,
+    status: "new",
+    path: "Báo cáo chỉ số",
+    icon: require("../../assets/icons/o-04.png"),
+  },
+  {
+    id: 6,
+    status: "new",
+    path: "Báo cáo HSSE",
+    icon: require("../../assets/icons/o-04.png"),
+  },
+  {
+    id: 7,
+    status: "new",
+    path: "Báo cáo P0",
+    icon: require("../../assets/icons/o-04.png"),
+  },
 ];
 
 // create a component
 const HomeScreen = ({ navigation }) => {
   const dispath = useDispatch();
   const { user, authToken } = useSelector((state) => state.authReducer);
-  
   const { setShowReport, showReport } = useContext(ReportContext);
+  const {setToken} = useContext(ExpoTokenContext)
 
   const [expoPushToken, setExpoPushToken] = useState("");
   const [notification, setNotification] = useState(undefined);
+
+  const [duan, setDuan] = useState([]);
+  const [refreshScreen, setRefreshScreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+
+  const [checkP0, setCheckP0] = useState(false)
+
   const notificationListener = useRef();
   const responseListener = useRef();
 
@@ -259,7 +327,25 @@ const HomeScreen = ({ navigation }) => {
     await dispath(ent_calv_get());
   };
 
- 
+  const funcDuan = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/ent_duan/thong-tin-du-an`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      setDuan(response.data.data);
+    } catch (error) {
+      Alert.alert("PMC Thông báo", "Đã có lỗi xảy ra vui lòng thử lại", [
+        {
+          text: "Xác nhận",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+      ]);
+    }
+  };
 
   useEffect(() => {
     int_khuvuc();
@@ -268,7 +354,9 @@ const HomeScreen = ({ navigation }) => {
     init_khoicv();
     init_tang();
     int_calv();
-  }, []);
+    funcDuan();
+    funcCheckP0();
+  }, [refreshScreen]);
 
   useEffect(() => {
     registerForPushNotificationsAsync()
@@ -297,12 +385,12 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     const dataRes = async () => {
-      
       await axios
         .post(
           BASE_URL + "/ent_user/device-token",
           {
             deviceToken: expoPushToken,
+            deviceName: Device.modelName
           },
           {
             headers: {
@@ -313,11 +401,80 @@ const HomeScreen = ({ navigation }) => {
         .then((response) => {})
         .catch((err) => console.log("err device", err));
     };
-    if(expoPushToken){
+    if (expoPushToken) {
       dataRes();
+      setToken(expoPushToken);
     }
-    
-  }, [authToken, expoPushToken]);
+  }, [authToken, expoPushToken, Device]);
+
+  const funcHandleDuan = async (ID_Duan) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `${BASE_URL}/ent_user/duan/update/${ID_Duan}`,
+        {},
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+
+      // Xử lý response nếu thành công
+      if (response.status === 200) {
+        const UserName = await AsyncStorage.getItem("UserName");
+        const Password = await AsyncStorage.getItem("Password");
+        dispath(login(UserName, Password));
+        Alert.alert("Thông báo", "Cập nhật dự án thành công!");
+        setRefreshScreen(true);
+      }
+    } catch (error) {
+      console.log("error", error.message);
+      Alert.alert("PMC Thông báo", "Đã có lỗi xảy ra, vui lòng thử lại", [
+        {
+          text: "Xác nhận",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const funcCheckP0 = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${BASE_URL}/p0/check`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+  
+      if (response.status === 200) {
+        setCheckP0(response.data.data);
+      } else {
+        // showAlert("Đã có lỗi xảy ra, vui lòng thử lại");
+      }
+    } catch (error) {
+      // console.error("error", error.message);
+      // showAlert("Đã có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const showAlert = (message) => {
+    Alert.alert("PMC Thông báo", message, [
+      {
+        text: "Xác nhận",
+        onPress: () => console.log("Alert dismissed"),
+        style: "cancel",
+      },
+    ]);
+  };
   
 
   return (
@@ -326,117 +483,180 @@ const HomeScreen = ({ navigation }) => {
       resizeMode="stretch"
       style={{ flex: 1, width: "100%" }}
     >
-      <View style={styles.container}>
-        <View style={styles.content}>
-          {user?.ent_duan?.Logo ? (
-            <Image
-              source={{ uri: user?.ent_duan?.Logo }}
-              resizeMode="contain"
-              style={{ height: adjust(70), width: adjust(180) }}
-            />
-          ) : (
-            <Image
-              source={require("../../assets/pmc_logo.png")}
-              resizeMode="contain"
-              style={{ height: adjust(80), width: adjust(200) }}
-            />
-          )}
-          <Text
-            allowFontScaling={false}
-            style={{
-              fontSize: adjust(20),
-              color: "white",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              paddingTop: 8,
-            }}
-          >
-            Dự án: {user?.ent_duan?.Duan}
-          </Text>
-          <Text
-            allowFontScaling={false}
-            style={{
-              color: "white",
-              fontSize: adjust(16),
-              marginTop: 10,
-            }}
-            numberOfLines={1}
-          >
-            Tài khoản: {user?.UserName}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.content,
-            {
-              width: "100%",
-              alignContent: "center",
-            },
-          ]}
-        >
-          <FlatList
-            style={{
-              width: "100%",
-              paddingHorizontal: 20,
-            }}
-            numColumns={2}
-            data={(() => {
-              let baseData =
-                user?.ent_chucvu?.Role == 3
-                  ? dataDanhMuc
-                  : user?.ent_chucvu?.Role == 1
-                  ? dataGD
-                  : user?.ent_chucvu?.Role == 2 && dataKST;
-
-          
-
-              const currentDate = new Date();
-              const targetDate = new Date("2025-01-01");
-
-              if (currentDate > targetDate) {
-                baseData = baseData.map((item) => ({
-                  ...item,
-                  status: null,
-                }));
-              }
-
-              return baseData;
-            })()}
-            renderItem={renderItem}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            contentContainerStyle={{ gap: 10 }}
-            columnWrapperStyle={{ gap: 10 }}
-          />
-        </View>
-        <View
+      {isLoading ? (
+        <ActivityIndicator
           style={{
-            flexDirection: "column",
-            marginTop: 20,
-            marginHorizontal: 20,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        >
-          <Text
-            allowFontScaling={false}
+          size="large"
+          color={COLORS.bg_white}
+        ></ActivityIndicator>
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            {user?.ent_duan?.Logo ? (
+              <Image
+                source={{ uri: user?.ent_duan?.Logo }}
+                resizeMode="contain"
+                style={{ height: adjust(70), width: adjust(180) }}
+              />
+            ) : (
+              <Image
+                source={require("../../assets/pmc_logo.png")}
+                resizeMode="contain"
+                style={{ height: adjust(80), width: adjust(200) }}
+              />
+            )}
+            <Text
+              allowFontScaling={false}
+              style={{
+                fontSize: adjust(20),
+                color: "white",
+                fontWeight: "700",
+                textTransform: "uppercase",
+                paddingTop: 8,
+              }}
+            >
+              Dự án: {user?.ent_duan?.Duan}
+            </Text>
+            <Text
+              allowFontScaling={false}
+              style={{
+                color: "white",
+                fontSize: adjust(16),
+                marginTop: 10,
+              }}
+              numberOfLines={1}
+            >
+              Tài khoản: {user?.UserName}
+            </Text>
+            {(user?.ent_chucvu?.Role === 5 || user?.ent_chucvu?.Role === 1 && user?.arr_Duan != null) && (
+              <SelectDropdown
+                data={duan.map((item) => item.Duan)} // Dữ liệu dự án
+                style={{ alignItems: "center" , height: "auto"}}
+                buttonStyle={styles.select}
+                dropdownStyle={styles.dropdown}
+                defaultButtonText={user?.ent_duan?.Duan}
+                buttonTextStyle={styles.customText}
+                searchable={true}
+                onSelect={(selectedItem, index) => {
+                  const selectedProject = duan[index]?.ID_Duan;
+                  funcHandleDuan(selectedProject);
+                }}
+                renderDropdownIcon={(isOpened) => (
+                  <FontAwesome
+                    name={isOpened ? "chevron-up" : "chevron-down"}
+                    color={"#637381"}
+                    size={18}
+                    style={{ marginRight: 10 }}
+                  />
+                )}
+                dropdownIconPosition={"right"}
+                buttonTextAfterSelection={(selectedItem, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text allowFontScaling={false} style={styles.selectedText}>
+                      {selectedItem || "Chọn dự án"}{" "}
+                    </Text>
+                  </View>
+                )}
+                renderCustomizedRowChild={(item, index) => (
+                  <View key={index} style={styles.dropdownItem}>
+                    <Text style={styles.dropdownItemText}>{item}</Text>
+                  </View>
+                )}
+                search
+              />
+            )}
+          </View>
+
+          <View
+            style={[
+              styles.content,
+              {
+                width: "100%",
+                alignContent: "center",
+              },
+            ]}
+          >
+            <FlatList
+              style={{
+                width: "100%",
+                paddingHorizontal: 20,
+              }}
+              numColumns={2}
+              data={(() => {
+                let baseData =
+                  user?.ent_chucvu?.Role == 3
+                    ? dataDanhMuc
+                    : user?.ent_chucvu?.Role == 5
+                    ? dataBQTKhoi
+                    : user?.ent_chucvu?.Role == 1
+                    ? dataGD
+                    : user?.ent_chucvu?.Role == 2 && dataKST;
+
+                if (!checkP0) {
+                  baseData = baseData.filter(item => item.id !== 7);
+                }
+
+                const currentDate = new Date();
+                const targetDate = new Date("2025-01-01");
+
+                if (currentDate > targetDate) {
+                  baseData = baseData.map((item) => ({
+                    ...item,
+                    status: null,
+                  }));
+                }
+
+                return baseData;
+              })()}
+              renderItem={renderItem}
+              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+              contentContainerStyle={{ gap: 10 }}
+              columnWrapperStyle={{ gap: 10 }}
+            />
+          </View>
+          <View
             style={{
-              color: "white",
-              fontSize: adjust(16),
+              flexDirection: "column",
+              marginTop: 20,
+              marginHorizontal: 20,
             }}
           >
-            Người Giám sát chỉ thực hiện công việc Checklist, Tra cứu và Đổi mật
-            khẩu.
-          </Text>
-          <Text
-            allowFontScaling={false}
-            style={{
-              color: "white",
-              fontSize: adjust(16),
-            }}
-          >
-            Giám đốc Tòa nhà toàn quyền sử dụng.
-          </Text>
+            <Text
+              allowFontScaling={false}
+              style={{
+                color: "white",
+                fontSize: adjust(16),
+              }}
+            >
+              Người Giám sát chỉ thực hiện công việc Checklist, Tra cứu và Đổi
+              mật khẩu.
+            </Text>
+            <Text
+              allowFontScaling={false}
+              style={{
+                color: "white",
+                fontSize: adjust(16),
+              }}
+            >
+              Giám đốc Tòa nhà toàn quyền sử dụng.
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
     </ImageBackground>
   );
 };
@@ -453,6 +673,59 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginTop: 20,
+  },
+  select: {
+    height: 50,
+    justifyContent: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+    marginTop: adjust(10),
+  },
+  customText: {
+    fontSize: 16,
+    color: "#4a4a4a",
+  },
+  dropdown: {
+    borderRadius: 8,
+    maxHeight: 300,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    marginTop: 5,
+    height: "auto",
+  },
+  selectedText: {
+    fontSize: 16,
+    color: "#4a4a4a",
+    textAlign: "center",
+  },
+  dropdownItem: {
+    paddingHorizontal: 10,
+    height: "auto",
+  },
+  dropdownItemText: {
+    height: "auto",
+    fontSize: 16,
+    color: "#333",
+  },
+  searchContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 5,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 10,
+  },
+  searchIcon: {
+    marginLeft: 10,
+    backgroundColor: "#fff",
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    marginLeft: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "#fff",
   },
 });
 

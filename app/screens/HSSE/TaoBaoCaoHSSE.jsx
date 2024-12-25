@@ -13,6 +13,8 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import CustomAlertModal from "../../components/CustomAlertModal";
+import RenderHTML from "react-native-render-html";
 import { useSelector } from "react-redux";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import adjust from "../../adjust";
@@ -52,17 +54,22 @@ const HSSE = [
   { id: 28, title: "Clo", key: "clo", value: "0" },
   { id: 29, title: "Nồng độ PH", key: "PH", value: "0" },
   { id: 30, title: "Poolblock", key: "Poolblock", value: "0" },
-  { id: 31, title: "Chất thải", key: "trat_thai", value: "0" },
+  { id: 31, title: "Trạt thải", key: "trat_thai", value: "0" },
   { id: 32, title: "pH Minus", key: "pHMINUS", value: "0" },
   { id: 33, title: "Axit", key: "axit", value: "0" },
   { id: 34, title: "PN180", key: "PN180", value: "0" },
   { id: 35, title: "Chỉ số CO2", key: "chiSoCO2", value: "0" },
+  { id: 36, title: "Clorin", key: "clorin", value: "0" },
+  { id: 37, title: "NaOCL", key: "NaOCL", value: "0" },
 ];
 
-const TaoBaoCaoHSSE = ({ navigation }) => {
+const TaoBaoCaoHSSE = ({ navigation, route }) => {
+  const { setIsReload } = route.params;
   const { authToken } = useSelector((state) => state.authReducer);
   const [hsseData, setHsseData] = useState(HSSE);
   const [isLoadingSubmit, setIsLoadingSubmit] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleChange = useCallback((id, value) => {
     setHsseData((prevState) =>
@@ -86,10 +93,23 @@ const TaoBaoCaoHSSE = ({ navigation }) => {
         text: "Xác nhận",
         onPress: () =>
           key
-            ? navigation.navigate("Báo cáo HSSE", { isReload: true })
+            ? navigation.navigate("Báo cáo HSSE")
             : console.log("Cancel Pressed"),
         style: "cancel",
       },
+    ]);
+  };
+
+  const checkSubmit = async () => {
+    Alert.alert("PMC Thông báo", "Bạn có chắc chắn muốn gửi không?", [
+      {
+        text: "Hủy",
+        onPress: () => {
+          console.log("Cancel Pressed");
+        },
+        style: "cancel",
+      },
+      { text: "Đồng ý", onPress: () => handleSubmit() },
     ]);
   };
 
@@ -115,8 +135,14 @@ const TaoBaoCaoHSSE = ({ navigation }) => {
 
       // Kiểm tra response status
       if (response.status == 200 || response.status == 201) {
-        showAlert("Gửi báo cáo thành công", true);
-        setHsseData(HSSE);
+        setIsReload(true);
+        setMessage(response.data.htmlResponse);
+        if (response.data.htmlResponse == "") {
+          showAlert("Gửi báo cáo thành công", true);
+          setHsseData(HSSE);
+        } else {
+          setIsModalVisible(true);
+        }
       } else {
         showAlert("Có lỗi xảy ra khi gửi báo cáo", false);
       }
@@ -196,11 +222,23 @@ const TaoBaoCaoHSSE = ({ navigation }) => {
             style={styles.submitButton}
             onPress={() => {
               Keyboard.dismiss();
-              handleSubmit();
+              checkSubmit();
             }}
           >
             <Text style={styles.submitButtonText}>Gửi báo cáo</Text>
           </TouchableOpacity>
+
+          <CustomAlertModal
+            isVisible={isModalVisible}
+            title="PMC Thông báo"
+            message={
+              <RenderHTML contentWidth={300} source={{ html: message }} />
+            }
+            onConfirm={() => {
+              setIsModalVisible(false);
+              navigation.navigate("Báo cáo HSSE");
+            }}
+          />
         </ImageBackground>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>

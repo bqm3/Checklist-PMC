@@ -3,9 +3,9 @@ import React from "react";
 import { Feather, AntDesign } from "@expo/vector-icons";
 import adjust from "../../adjust";
 import moment from "moment";
-import { COLORS } from "../../constants/theme";
+import { COLORS, SIZES } from "../../constants/theme";
 
-export default function ItemCaChecklist({
+export default function ItemTracuuCa({
   item,
   index,
   toggleTodo,
@@ -25,12 +25,12 @@ export default function ItemCaChecklist({
       onPress={() => toggleTodo(item)}
     >
       <View style={styles.row}>
-        <View style={{ width: 110 }}>
+        <View style={{ width: SIZES.width * 0.3 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
           >
-            Ngày nhập
+            Ngày checklist
           </Text>
         </View>
         <Text
@@ -40,20 +40,11 @@ export default function ItemCaChecklist({
             { fontWeight: "500", color: isExistIndex ? "black" : "white" },
           ]}
         >
-          :{" "}
-          {item?.Gioghinhan
-            ? moment(item?.Gioghinhan, "HH:mm:ss").format("HH:mm")
-            : moment(item.Giobd, "HH:mm:ss").format("HH:mm")}
-          {item.Giokt
-            ? ` - ${moment(item?.Giokt, "HH:mm:ss").format("HH:mm")}`
-            : ""}{" "}
-          {item?.Gioghinhan
-            ? moment(item?.Ngay).add(1, "days").format("DD-MM")
-            : moment(item?.Ngay).format("DD-MM")}
+          : {item?.Ngay}
         </Text>
-        <Image
+        {/* <Image
           source={
-            item.Tinhtrang === 1
+            item.TongC >= item.Tong
               ? require("../../../assets/icons/ic_done.png")
               : require("../../../assets/icons/ic_circle_close.png")
           }
@@ -63,15 +54,15 @@ export default function ItemCaChecklist({
             marginStart: "auto",
           }}
           resizeMode="contain"
-        />
+        /> */}
       </View>
       <View style={styles.row}>
-        <View style={{ width: 110 }}>
+        <View style={{ width: SIZES.width * 0.3 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
           >
-            Tên nhân viên
+            Ca làm việc
           </Text>
         </View>
         <Text
@@ -81,16 +72,16 @@ export default function ItemCaChecklist({
             { fontWeight: "500", color: isExistIndex ? "black" : "white" },
           ]}
         >
-          : {item?.ent_user?.Hoten}
+          : {item?.Ca}
         </Text>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 110 }}>
+        <View style={{ width: SIZES.width * 0.3 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}
           >
-            Tên ca
+            Khối công việc
           </Text>
         </View>
         <Text
@@ -100,11 +91,11 @@ export default function ItemCaChecklist({
             { fontWeight: "500", color: isExistIndex ? "black" : "white" },
           ]}
         >
-          : {item?.ent_calv.Tenca}
+          : {item?.KhoiCV}
         </Text>
       </View>
       <View style={styles.row}>
-        <View style={{ width: 110 }}>
+        <View style={{ width: SIZES.width * 0.3 }}>
           <Text
             allowFontScaling={false}
             style={[styles.title, { color: isExistIndex ? "black" : "white" }]}

@@ -15,7 +15,8 @@ import {
   ScrollView,
   Modal,
 } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import * as Device from "expo-device";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Entypo, AntDesign, FontAwesome } from "@expo/vector-icons";
@@ -25,6 +26,7 @@ import adjust from "../../adjust";
 import moment from "moment";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import {
   ent_tang_get,
   ent_khuvuc_get,
@@ -42,6 +44,7 @@ import { BASE_URL } from "../../constants/config";
 import { axiosClient } from "../../api/axiosClient";
 import { nowDate } from "../../utils/util";
 import ModalCallSucongoai from "../../components/Modal/ModalCallSucongoai";
+import ExpoTokenContext from "../../context/ExpoTokenContext";
 
 const ThuchienSucongoai = ({ navigation, route }) => {
   const dispath = useDispatch();
@@ -50,6 +53,7 @@ const ThuchienSucongoai = ({ navigation, route }) => {
   const { ent_khuvuc, ent_khoicv, ent_toanha, ent_hangmuc } = useSelector(
     (state) => state.entReducer
   );
+  const { token } = useContext(ExpoTokenContext);
 
   const [dataKhuvuc, setDataKhuvuc] = useState([]);
   const [dataHangmuc, setDataHangmuc] = useState([]);
@@ -63,6 +67,8 @@ const ThuchienSucongoai = ({ navigation, route }) => {
     Giosuco: null,
     Noidungsuco: "",
     Duongdancacanh: [],
+    deviceUser: token,
+    deviceNameUser: Device.modelName,
   });
 
   const [dataCheckKhuvuc, setDataCheckKhuvuc] = useState({
@@ -138,7 +144,15 @@ const ThuchienSucongoai = ({ navigation, route }) => {
             });
 
             if (!result.canceled) {
-              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+              // Resize the image
+              const resizedImage = await ImageManipulator.manipulateAsync(
+                result.assets[0].uri,
+                [{ resize: { width: 800 } }], // Resize to a width of 800px
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Compress and save as JPEG
+              );
+
+              // Add the resized image URI to state
+              setImages((prevImages) => [...prevImages, resizedImage.uri]);
             }
           },
         },
@@ -161,7 +175,15 @@ const ThuchienSucongoai = ({ navigation, route }) => {
             });
 
             if (!result.canceled) {
-              setImages((prevImages) => [...prevImages, result.assets[0].uri]);
+              // Resize the image
+              const resizedImage = await ImageManipulator.manipulateAsync(
+                result.assets[0].uri,
+                [{ resize: { width: 800 } }], // Resize to a width of 800px
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Compress and save as JPEG
+              );
+
+              // Add the resized image URI to state
+              setImages((prevImages) => [...prevImages, resizedImage.uri]);
             }
           },
         },
@@ -225,29 +247,39 @@ const ThuchienSucongoai = ({ navigation, route }) => {
   };
 
   const handleSubmit = async () => {
+    console.log("running submit");
     setLoadingSubmit(true);
     let formData = new FormData();
     try {
       if (images.length > 0) {
-        images.map((item, index) => {
+        for (let index = 0; index < images.length; index++) {
+          let item = images[index];
+
+          // Resize the image using expo-image-manipulator
+          const resizedImage = await ImageManipulator.manipulateAsync(
+            item, // The URI of the image to resize
+            [{ resize: { width: 800, height: 600 } }], // Set desired width and height (adjust as needed)
+            { compress: 1, format: ImageManipulator.SaveFormat.JPEG } // Set compression quality and format
+          );
+
           const file = {
-            uri: Platform.OS === "android" ? item : item.replace("file://", ""),
-            name:
-              Math.floor(Math.random() * Math.floor(99999999999999)) +
-              index +
-              ".jpg",
+            uri:
+              Platform.OS === "android"
+                ? resizedImage.uri
+                : resizedImage.uri.replace("file://", ""),
+            name: Math.floor(Math.random() * 99999) + index + ".jpg", // Random filename
             type: "image/jpg",
           };
 
-          // Append image file to formData
           formData.append(`Images_${index}`, file);
-          // formData.append(`Anh1`, file?.name);
-        });
+        }
         formData.append("ID_Hangmuc", dataInput.ID_Hangmuc);
         formData.append("Ngaysuco", dataInput.Ngaysuco);
         formData.append("Giosuco", dataInput.Giosuco);
         formData.append("Noidungsuco", dataInput.Noidungsuco);
         formData.append("ID_User", user.ID_User);
+        formData.append("deviceUser", token);
+        formData.append("deviceNameUser", Device.modelName);
         formData.append("Tinhtrangxuly", 0);
         if (dataInput.Ngaysuco == null || dataInput.Giosuco == null) {
           Alert.alert("PMC Thông báo", "Vui lòng nhập đầy đủ thông tin", [
@@ -297,6 +329,8 @@ const ThuchienSucongoai = ({ navigation, route }) => {
           Ngaysuco: dataInput.Ngaysuco,
           Giosuco: dataInput.Giosuco,
           Noidungsuco: dataInput.Noidungsuco,
+          deviceUser: token,
+          deviceNameUser: Device.modelName,
           ID_User: user.ID_User,
           Tinhtrangxuly: 0,
         };

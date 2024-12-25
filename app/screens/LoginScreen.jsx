@@ -41,7 +41,7 @@ import axios from "axios";
 import DataLicense from "../components/PrivacyPolicy";
 import Checkbox from "../components/Active/Checkbox";
 
-const version = "2.1.2";
+const version = "2.1.5";
 
 const LoginScreen = ({ navigation }) => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -221,10 +221,9 @@ const LoginScreen = ({ navigation }) => {
     setIsBottomSheetOpen(0); // Open bottomsheet
   }, []);
 
-  const handleCloseBottomSheet = useCallback(() => {
-    bottomSheetModalRef.current.close();
-    setIsBottomSheetOpen(-1); // Close bottomsheet
-  }, []);
+  const handleCloseBottomSheet = () => {
+      setIsBottomSheetOpen(-1); 
+  };
 
   useEffect(() => {
     if (statusLocation === 0) {
