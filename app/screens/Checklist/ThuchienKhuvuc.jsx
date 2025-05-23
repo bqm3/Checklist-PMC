@@ -25,7 +25,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   ent_checklist_mul_hm,
-  ent_checklist_mul_hm_return,
+  ent_get_sdt_KhanCap,
 } from "../../redux/actions/entActions";
 import { COLORS, SIZES } from "../../constants/theme";
 import Button from "../../components/Button/Button";
@@ -59,12 +59,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     useContext(ChecklistContext);
 
   const dispath = useDispatch();
-  const {
-    ent_khuvuc,
-    ent_checklist_detail,
-    ent_checklist_detail_return,
-    ent_hangmuc,
-  } = useSelector((state) => state.entReducer);
+  const { ent_khuvuc, ent_checklist_detail, ent_hangmuc, sdt_khancap } =
+    useSelector((state) => state.entReducer);
   const { isConnect, saveConnect } = useContext(ConnectContext);
 
   const { user, authToken } = useSelector((state) => state.authReducer);
@@ -85,6 +81,10 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
   const [isConnected, setConnected] = useState(true);
 
   useEffect(() => {
+    dispath(ent_get_sdt_KhanCap());
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setConnected(state.isConnected);
     });
@@ -96,7 +96,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     if (isLoadingDetail) {
       const timer = setTimeout(() => {
         setIsLoadingDetail(false);
-      }, 1500);
+      }, 1000);
 
       return () => clearTimeout(timer);
     }
@@ -184,7 +184,10 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
         );
         if (
           (network === "close" && isConnect) ||
-          (savedData !== null && savedData !== undefined && savedData !== "")
+          (savedData !== null &&
+            savedData !== undefined &&
+            savedData !== "" &&
+            savedData?.length > 0)
         ) {
           setSubmit(true);
         }
@@ -196,8 +199,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           setSubmit(false);
         }
       } catch (error) {
-        // Handle any errors that occur
-        console.log("Error fetching network status:", error);
         setSubmit(false);
       }
     };
@@ -227,31 +228,9 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     }
   };
 
-  const init_checklist_return = async () => {
-    await dispath(
-      ent_checklist_mul_hm_return(ID_Hangmucs, ID_Calv, ID_ChecklistC)
-    );
-  };
-
   useEffect(() => {
     loadData();
   }, [ent_checklist_detail]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      init_checklist_return();
-      return () => {};
-    }, [dispath])
-  );
-
-  // Tải lại dữ liệu khi vào lại trang
-  const loadDataReturn = async () => {
-    setDataChecklistByCa(ent_checklist_detail_return);
-  };
-
-  useEffect(() => {
-    loadDataReturn();
-  }, [ent_checklist_detail_return]);
 
   useEffect(() => {
     const dataChecklistAction = dataChecklistFilterContext?.filter(
@@ -330,6 +309,20 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
     setIsScan(false);
     setModalVisibleQr(false);
     setOpacity(1);
+  };
+
+  const handleEmergencyCall = () => {
+    if (!sdt_khancap) {
+      Alert.alert("PMC Thông báo", "Không có số điện thoại khẩn cấp!", [
+        { text: "Xác nhận" },
+      ]);
+      return;
+    }
+
+    const phoneUrl = `tel:${sdt_khancap}`;
+    Linking.openURL(phoneUrl).catch((error) => {
+      Alert.alert("PMC Thông báo", "Không thể thực hiện cuộc gọi!");
+    });
   };
 
   const handleSubmitChecklist = async () => {
@@ -422,6 +415,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
+          formData.append("ID_Phanhe", item.ID_Phanhe);
           formData.append("Ketqua", item.valueCheck || "");
           formData.append("Gioht", item.Gioht);
           formData.append("Ghichu", item.GhichuChitiet || "");
@@ -437,8 +431,8 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                   Platform.OS === "android"
                     ? image.uri
                     : image.uri.replace("file://", ""),
-                  [{ resize: { width: image.width * 0.6 } }], 
-                  { compress: 1, format: ImageManipulator.SaveFormat.PNG } 
+                  [{ resize: { width: image.width * 0.6 } }],
+                  { compress: 1, format: ImageManipulator.SaveFormat.PNG }
                 );
 
                 const file = {
@@ -474,7 +468,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             await AsyncStorage.removeItem("checkNetwork");
 
             setSubmit(false);
-            postHandleSubmit();
+            await postHandleSubmit();
             setLoadingSubmit(false);
             Alert.alert("PMC Thông báo", "Checklist thành công", [
               {
@@ -605,6 +599,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           formData.append("Key_Image", 1);
           formData.append("ID_ChecklistC", ID_ChecklistC);
           formData.append("ID_Checklist", item.ID_Checklist);
+          formData.append("ID_Phanhe", item.ID_Phanhe);
           formData.append("Ketqua", item.valueCheck || "");
           formData.append("Gioht", item.Gioht);
           formData.append("Ghichu", item.GhichuChitiet || "");
@@ -699,7 +694,7 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
           .all([requestFaild, requestDone])
           .then(
             axios.spread(async (faildResponse, doneResponse) => {
-              postHandleSubmit();
+              await postHandleSubmit();
               setLoadingSubmit(false);
               await AsyncStorage.removeItem("checkNetwork");
 
@@ -717,7 +712,6 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
             })
           )
           .catch((error) => {
-            console.log("Error: 1" + error);
             setLoadingSubmit(false);
 
             if (error.response) {
@@ -1007,15 +1001,17 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                           </Text>
                         )}
                       </View>
-                      {submit === true && (
-                        <Button
-                          text={"Hoàn thành tất cả"}
-                          isLoading={loadingSubmit}
-                          backgroundColor={COLORS.bg_button}
-                          color={"white"}
-                          onPress={() => handleSubmitChecklist()}
-                        />
-                      )}
+                      {submit === true &&
+                        (defaultActionDataChecklist?.length > 0 ||
+                          dataChecklistFaild?.length > 0) && (
+                          <Button
+                            text={"Hoàn thành"}
+                            isLoading={loadingSubmit}
+                            backgroundColor={COLORS.bg_button}
+                            color={"white"}
+                            onPress={() => handleSubmitChecklist()}
+                          />
+                        )}
                     </View>
                   </View>
                 </View>
@@ -1121,6 +1117,17 @@ const ThucHienKhuvuc = ({ route, navigation }) => {
                       onPress={() => handleSubmit()}
                     />
                   )}
+
+                  {/* {!dataSelect[0] && (
+                    <Button
+                      // image={require("../../../assets/icons/ic_phone_green_2.png")}
+                      text={"Gọi khẩn cấp"}
+                      isLoading={loadingSubmit}
+                      backgroundColor={"red"}
+                      color={"white"}
+                      onPress={() => handleEmergencyCall()}
+                    />
+                  )} */}
                 </View>
               </View>
             </ImageBackground>

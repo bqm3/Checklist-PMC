@@ -31,7 +31,7 @@ import axiosClient from '../../api/axiosClient';
 //   };
 // };
 
-export const login = (UserName, Password) => {
+export const login = (UserName, Password, deviceInfo, infoIP) => {
   return async dispatch => {
     dispatch({
       type: type.SET_LOGIN_INIT,
@@ -49,10 +49,12 @@ export const login = (UserName, Password) => {
         {
           UserName,
           Password,
+          deviceInfo,
+          infoIP
         },
       );
       if (response.status == 200) {
-        const {token, user} = response.data;
+        const {token, user, passwordCore} = response.data;
         await AsyncStorage.setItem('tokenUser', token);
         dispatch({
           type: type.SET_LOGIN_SUCCESS,
@@ -60,18 +62,30 @@ export const login = (UserName, Password) => {
             user: user,
             authToken: token,
             message: null,
-            isLoading: false
+            isLoading: false,
+            passwordCore: passwordCore
           },
         });
       }
-    } catch (e) {
+    } catch (error) {
+
+      let errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!';
+      if (error.response) {
+        errorMessage = error.response.data.message || 'Thông tin đăng nhập sai. Vui lòng thử lại!';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Hết thời gian kết nối. Vui lòng kiểm tra mạng và thử lại!';
+      } else if (error.request) {
+        errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra mạng!';
+      }
+
       dispatch({
         type: type.SET_LOGIN_FAIL,
         payload: {
           user: null,
           authToken: null,
-          message: "Thông tin đăng nhập sai. Vui lòng thử lại!!!",
-          isLoading: false
+          message: errorMessage,
+          isLoading: false ,
+          passwordCore: null
         },
       });
     }

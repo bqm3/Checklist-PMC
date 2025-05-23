@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useContext } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import adjust from "../../adjust";
 import axios from "axios";
 import { BASE_URL } from "../../constants/config";
 import { COLORS } from "../../constants/theme";
+import { ReloadContext } from "../../context/ReloadContext";
 
 const HSSE = [
   { id: 0, title: "Điện cư dân", key: "Dien_cu_dan", value: "0" },
@@ -64,7 +65,7 @@ const HSSE = [
 ];
 
 const TaoBaoCaoHSSE = ({ navigation, route }) => {
-  const { setIsReload } = route.params;
+   const { isReload, setIsReload } = useContext(ReloadContext);
   const { authToken } = useSelector((state) => state.authReducer);
   const [hsseData, setHsseData] = useState(HSSE);
   const [isLoadingSubmit, setIsLoadingSubmit] = useState(false);
@@ -119,6 +120,14 @@ const TaoBaoCaoHSSE = ({ navigation, route }) => {
       acc[item.key] = floatValue;
       return acc;
     }, {});
+
+    if (Object.values(filteredReport).every(value => value === 0)) {
+      showAlert(
+        "Chưa có thông tin nào thay đổi. Vui lòng nhập thông tin !",
+        false
+      );
+      return;
+    }    
 
     setIsLoadingSubmit(true);
     try {
